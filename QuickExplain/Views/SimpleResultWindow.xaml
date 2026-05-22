@@ -25,17 +25,25 @@
         <local:SimpleResultWindowViewModel />
     </Window.DataContext>
     <Window.Resources>
+        <FontFamily x:Key="OutputFontFamily">Yu Gothic UI</FontFamily>
+        <FontFamily x:Key="CodeFontFamily">Cascadia Mono, Consolas, Yu Gothic UI</FontFamily>
         <sys:Double x:Key="MarkdownFontSize">15</sys:Double>
-        <sys:Double x:Key="MarkdownHeading1FontSize">23.25</sys:Double>
-        <sys:Double x:Key="MarkdownHeading2FontSize">20.25</sys:Double>
-        <sys:Double x:Key="MarkdownHeading3FontSize">18</sys:Double>
-        <sys:Double x:Key="MarkdownHeading4FontSize">16.5</sys:Double>
-        <sys:Double x:Key="MarkdownHeading5FontSize">15</sys:Double>
-        <sys:Double x:Key="MarkdownHeading6FontSize">14.25</sys:Double>
+        <sys:Double x:Key="MarkdownHeading1FontSize">27</sys:Double>
+        <sys:Double x:Key="MarkdownHeading2FontSize">23</sys:Double>
+        <sys:Double x:Key="MarkdownHeading3FontSize">20</sys:Double>
+        <sys:Double x:Key="MarkdownHeading4FontSize">18</sys:Double>
+        <sys:Double x:Key="MarkdownHeading5FontSize">16.5</sys:Double>
+        <sys:Double x:Key="MarkdownHeading6FontSize">15</sys:Double>
         <Style x:Key="SimpleMarkdownParagraphStyle" TargetType="{x:Type Paragraph}">
+            <Setter Property="FontFamily" Value="{StaticResource OutputFontFamily}" />
             <Setter Property="FontSize" Value="{DynamicResource MarkdownFontSize}" />
             <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}" />
             <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+        <Style x:Key="SimpleMarkdownCodeStyle" TargetType="{x:Type Run}">
+            <Setter Property="FontFamily" Value="{StaticResource CodeFontFamily}" />
+            <Setter Property="Background" Value="{DynamicResource MarkdownCodeBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource MarkdownCodeForeground}" />
         </Style>
         <Style
             x:Key="SimpleMarkdownHeadingStyle"
@@ -81,6 +89,7 @@
             <Setter Property="FontSize" Value="{DynamicResource MarkdownHeading6FontSize}" />
         </Style>
         <Style x:Key="SimpleMarkdownTableRowGroupStyle" TargetType="{x:Type TableRowGroup}">
+            <Setter Property="FontFamily" Value="{StaticResource OutputFontFamily}" />
             <Setter Property="FontSize" Value="{DynamicResource MarkdownFontSize}" />
             <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}" />
         </Style>
@@ -93,9 +102,13 @@
             Heading5Style="{StaticResource SimpleMarkdownHeading5Style}"
             Heading6Style="{StaticResource SimpleMarkdownHeading6Style}"
             NormalParagraphStyle="{StaticResource SimpleMarkdownParagraphStyle}"
+            CodeStyle="{StaticResource SimpleMarkdownCodeStyle}"
             TableBodyStyle="{StaticResource SimpleMarkdownTableRowGroupStyle}"
             TableHeaderStyle="{StaticResource SimpleMarkdownTableRowGroupStyle}" />
-        <local:SafeMarkdownToFlowDocumentConverter x:Key="SimpleSafeMarkdownToFlowDocumentConverter" Markdown="{StaticResource SimpleMarkdownEngine}" />
+        <local:SafeMarkdownToFlowDocumentConverter
+            x:Key="SimpleSafeMarkdownToFlowDocumentConverter"
+            Markdown="{StaticResource SimpleMarkdownEngine}"
+            ForegroundResourceKey="MaterialDesignBody" />
     </Window.Resources>
 
     <Grid>
@@ -140,6 +153,7 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     local:FontZoomBehavior.IsZoomEnabled="True"
+                    FontFamily="{StaticResource OutputFontFamily}"
                     FontSize="{DynamicResource MarkdownFontSize}"
                     Foreground="{DynamicResource MaterialDesignBody}"
                     Document="{Binding TranslatedText, Converter={StaticResource SimpleSafeMarkdownToFlowDocumentConverter}}"

@@ -172,6 +172,8 @@ namespace QuickExplain
                 SetBrushResource("ChatAiBubbleBorder", System.Windows.Media.Color.FromRgb(0x4A, 0x4A, 0x4A));
                 SetBrushResource("ChatAiBubbleForeground", System.Windows.Media.Color.FromRgb(0xE8, 0xE8, 0xE8));
                 SetBrushResource("ChatLabelForeground", System.Windows.Media.Color.FromRgb(0xBD, 0xBD, 0xBD));
+                SetBrushResource("MarkdownCodeBackground", System.Windows.Media.Color.FromRgb(0x1E, 0x1E, 0x1E));
+                SetBrushResource("MarkdownCodeForeground", System.Windows.Media.Color.FromRgb(0xD4, 0xD4, 0xD4));
             }
             else
             {
@@ -180,6 +182,8 @@ namespace QuickExplain
                 SetBrushResource("ChatAiBubbleBorder", System.Windows.Media.Color.FromRgb(0xB3, 0xBF, 0xCC));
                 SetBrushResource("ChatAiBubbleForeground", System.Windows.Media.Color.FromRgb(0x22, 0x22, 0x22));
                 SetBrushResource("ChatLabelForeground", System.Windows.Media.Color.FromRgb(0x6B, 0x6B, 0x6B));
+                SetBrushResource("MarkdownCodeBackground", System.Windows.Media.Color.FromRgb(0xF4, 0xF6, 0xF8));
+                SetBrushResource("MarkdownCodeForeground", System.Windows.Media.Color.FromRgb(0x24, 0x2A, 0x31));
             }
 
             WindowUtilities.ApplyTitleBarThemeToAllWindows();

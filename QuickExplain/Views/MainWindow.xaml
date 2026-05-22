@@ -22,17 +22,25 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <local:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter" />
+        <FontFamily x:Key="OutputFontFamily">Yu Gothic UI</FontFamily>
+        <FontFamily x:Key="CodeFontFamily">Cascadia Mono, Consolas, Yu Gothic UI</FontFamily>
         <sys:Double x:Key="MarkdownFontSize">15</sys:Double>
-        <sys:Double x:Key="MarkdownHeading1FontSize">23.25</sys:Double>
-        <sys:Double x:Key="MarkdownHeading2FontSize">20.25</sys:Double>
-        <sys:Double x:Key="MarkdownHeading3FontSize">18</sys:Double>
-        <sys:Double x:Key="MarkdownHeading4FontSize">16.5</sys:Double>
-        <sys:Double x:Key="MarkdownHeading5FontSize">15</sys:Double>
-        <sys:Double x:Key="MarkdownHeading6FontSize">14.25</sys:Double>
+        <sys:Double x:Key="MarkdownHeading1FontSize">27</sys:Double>
+        <sys:Double x:Key="MarkdownHeading2FontSize">23</sys:Double>
+        <sys:Double x:Key="MarkdownHeading3FontSize">20</sys:Double>
+        <sys:Double x:Key="MarkdownHeading4FontSize">18</sys:Double>
+        <sys:Double x:Key="MarkdownHeading5FontSize">16.5</sys:Double>
+        <sys:Double x:Key="MarkdownHeading6FontSize">15</sys:Double>
         <Style x:Key="MarkdownParagraphStyle" TargetType="{x:Type Paragraph}">
+            <Setter Property="FontFamily" Value="{StaticResource OutputFontFamily}" />
             <Setter Property="FontSize" Value="{DynamicResource MarkdownFontSize}" />
             <Setter Property="Foreground" Value="{DynamicResource ChatAiBubbleForeground}" />
             <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+        <Style x:Key="MarkdownCodeStyle" TargetType="{x:Type Run}">
+            <Setter Property="FontFamily" Value="{StaticResource CodeFontFamily}" />
+            <Setter Property="Background" Value="{DynamicResource MarkdownCodeBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource MarkdownCodeForeground}" />
         </Style>
         <Style
             x:Key="MarkdownHeadingStyle"
@@ -84,6 +92,7 @@
             <Setter Property="MarkerStyle" Value="Disc" />
         </Style>
         <Style x:Key="MarkdownTableRowGroupStyle" TargetType="{x:Type TableRowGroup}">
+            <Setter Property="FontFamily" Value="{StaticResource OutputFontFamily}" />
             <Setter Property="FontSize" Value="{DynamicResource MarkdownFontSize}" />
             <Setter Property="Foreground" Value="{DynamicResource ChatAiBubbleForeground}" />
         </Style>
@@ -96,9 +105,13 @@
             Heading5Style="{StaticResource MarkdownHeading5Style}"
             Heading6Style="{StaticResource MarkdownHeading6Style}"
             NormalParagraphStyle="{StaticResource MarkdownParagraphStyle}"
+            CodeStyle="{StaticResource MarkdownCodeStyle}"
             TableBodyStyle="{StaticResource MarkdownTableRowGroupStyle}"
             TableHeaderStyle="{StaticResource MarkdownTableRowGroupStyle}" />
-        <local:SafeMarkdownToFlowDocumentConverter x:Key="SafeMarkdownToFlowDocumentConverter" Markdown="{StaticResource MarkdownEngine}" />
+        <local:SafeMarkdownToFlowDocumentConverter
+            x:Key="SafeMarkdownToFlowDocumentConverter"
+            Markdown="{StaticResource MarkdownEngine}"
+            ForegroundResourceKey="ChatAiBubbleForeground" />
     </Window.Resources>
 
     <Grid>
@@ -295,6 +308,7 @@
                                             <FlowDocumentScrollViewer
                                                 x:Name="AssistantMessageBody"
                                                 local:MouseWheelPassthroughBehavior.IsEnabled="True"
+                                                FontFamily="{StaticResource OutputFontFamily}"
                                                 Foreground="{DynamicResource ChatAiBubbleForeground}"
                                                 Document="{Binding Text, Converter={StaticResource SafeMarkdownToFlowDocumentConverter}}"
                                                 HorizontalScrollBarVisibility="Disabled"
