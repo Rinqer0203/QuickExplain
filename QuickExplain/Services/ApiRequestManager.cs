@@ -80,6 +80,18 @@ namespace QuickExplain.Services
             _messages.Clear();
         }
 
+        public void SetMessages(IEnumerable<(string role, string text)> messages)
+        {
+            _messages.Clear();
+            foreach (var (role, text) in messages)
+            {
+                if (string.IsNullOrWhiteSpace(text))
+                    continue;
+
+                _messages.Add((role, text));
+            }
+        }
+
         public async Task<string> RequestTranslation()
         {
             if (_isRequesting)

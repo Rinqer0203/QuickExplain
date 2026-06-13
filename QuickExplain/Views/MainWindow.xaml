@@ -286,8 +286,13 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="0,0,0,12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
                                 <Border
                                     x:Name="MessageBubble"
+                                    Grid.Row="0"
                                     Padding="10"
                                     Background="{DynamicResource ChatAiBubbleBackground}"
                                     BorderBrush="{DynamicResource ChatAiBubbleBorder}"
@@ -324,8 +329,61 @@
                                             Source="{Binding ImageSource}"
                                             Stretch="Uniform"
                                             Visibility="Visible" />
+                                        <StackPanel
+                                            x:Name="AssistantMessageActions"
+                                            Margin="5,8,0,0"
+                                            HorizontalAlignment="Left"
+                                            Orientation="Horizontal"
+                                            Visibility="{Binding CanShowAssistantActions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Button
+                                                Width="28"
+                                                Height="28"
+                                                Command="{Binding DataContext.CopyMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource MaterialDesignIconForegroundButton}"
+                                                ToolTip="コピー"
+                                                Visibility="{Binding CanCopyText, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <materialDesign:PackIcon
+                                                    Width="16"
+                                                    Height="16"
+                                                    Kind="ContentCopy" />
+                                            </Button>
+                                            <Button
+                                                Width="28"
+                                                Height="28"
+                                                Command="{Binding DataContext.ReloadMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource MaterialDesignIconForegroundButton}"
+                                                ToolTip="再生成"
+                                                Visibility="{Binding CanReload, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <materialDesign:PackIcon
+                                                    Width="16"
+                                                    Height="16"
+                                                    Kind="Reload" />
+                                            </Button>
+                                        </StackPanel>
                                     </StackPanel>
                                 </Border>
+                                <StackPanel
+                                    x:Name="UserMessageActions"
+                                    Grid.Row="1"
+                                    Margin="0,6,8,0"
+                                    HorizontalAlignment="Right"
+                                    Orientation="Horizontal"
+                                    Visibility="{Binding CanShowUserActions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <Button
+                                        Width="28"
+                                        Height="28"
+                                        Command="{Binding DataContext.CopyMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource MaterialDesignIconForegroundButton}"
+                                        ToolTip="コピー">
+                                        <materialDesign:PackIcon
+                                            Width="16"
+                                            Height="16"
+                                            Kind="ContentCopy" />
+                                    </Button>
+                                </StackPanel>
                             </Grid>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding ImageSource}" Value="{x:Null}">

@@ -9,10 +9,35 @@ namespace QuickExplain.Models
         public string DisplayName { get; }
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanCopyText))]
+        [NotifyPropertyChangedFor(nameof(CanShowUserActions))]
         private string _text;
 
         [ObservableProperty]
         private ImageSource? _imageSource;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanCopyText))]
+        [NotifyPropertyChangedFor(nameof(CanReload))]
+        [NotifyPropertyChangedFor(nameof(CanShowAssistantActions))]
+        [NotifyPropertyChangedFor(nameof(CanShowUserActions))]
+        private bool _isStreaming;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanReload))]
+        private bool _supportsReload = true;
+
+        public bool IsUser => Role == "user";
+
+        public bool IsAssistant => Role == "assistant";
+
+        public bool CanCopyText => !IsStreaming && string.IsNullOrWhiteSpace(Text) == false;
+
+        public bool CanShowUserActions => IsUser && CanCopyText;
+
+        public bool CanShowAssistantActions => IsAssistant && !IsStreaming;
+
+        public bool CanReload => IsAssistant && SupportsReload && !IsStreaming;
 
         public ChatMessage(string role, string displayName, string text, ImageSource? imageSource = null)
         {
