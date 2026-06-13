@@ -1,5 +1,6 @@
 using QuickExplain.Models;
 using QuickExplain.Services;
+using MaterialDesignThemes.Wpf;
 using System.Windows;
 using System.Windows.Input;
 
@@ -58,6 +59,15 @@ namespace QuickExplain
 
             vm.SetScreenshotHotKey(hotKey);
             e.Handled = true;
+        }
+
+        private void SettingsDialogHost_DialogClosing(object sender, DialogClosingEventArgs eventArgs)
+        {
+            if (eventArgs.Parameter as string != "OK")
+                return;
+
+            AppConfig.Instance.ResetPromptProfiles();
+            AppConfig.Instance.SaveConfigJson();
         }
 
         private static bool TryBuildHotKey(System.Windows.Input.KeyEventArgs e, out HotKeyDefinition hotKey)

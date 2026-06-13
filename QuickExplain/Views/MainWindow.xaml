@@ -469,6 +469,7 @@
                             <Button
                                 Margin="0,0,6,6"
                                 Padding="10,3"
+                                materialDesign:ButtonAssist.CornerRadius="18"
                                 Command="{Binding DataContext.SendQuickQuestionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}"
                                 FontSize="13"

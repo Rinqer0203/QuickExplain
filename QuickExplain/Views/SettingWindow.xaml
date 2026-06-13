@@ -19,6 +19,43 @@
         <local:SettingWindowViewModel />
     </Window.DataContext>
 
+    <materialDesign:DialogHost
+        x:Name="SettingsDialogHost"
+        CloseOnClickAway="False"
+        DialogClosing="SettingsDialogHost_DialogClosing">
+        <materialDesign:DialogHost.DialogContent>
+            <Border
+                MinWidth="360"
+                Padding="24">
+                <StackPanel>
+                    <TextBlock
+                        Margin="0,0,0,16"
+                        FontSize="20"
+                        FontWeight="SemiBold"
+                        Text="プロンプト設定をリセット" />
+                    <TextBlock
+                        Margin="0,0,0,24"
+                        Text="プロンプト設定を初期状態に戻します。よろしいですか？"
+                        TextWrapping="Wrap" />
+                    <StackPanel
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                        <Button
+                            Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
+                            CommandParameter="Cancel"
+                            Content="キャンセル"
+                            Style="{StaticResource MaterialDesignFlatButton}" />
+                        <Button
+                            Margin="8,0,0,0"
+                            Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
+                            CommandParameter="OK"
+                            Content="OK"
+                            Style="{StaticResource MaterialDesignFlatButton}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </materialDesign:DialogHost.DialogContent>
+
     <Grid Margin="20">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel
@@ -147,6 +184,15 @@
                     IsChecked="{Binding EnableDoubleCopyAction}"
                     Style="{StaticResource MaterialDesignCheckBox}" />
 
+                <Button
+                    Margin="0,0,0,20"
+                    HorizontalAlignment="Left"
+                    Command="{x:Static materialDesign:DialogHost.OpenDialogCommand}"
+                    CommandTarget="{Binding ElementName=SettingsDialogHost}"
+                    Style="{StaticResource MaterialDesignOutlinedButton}">
+                    <TextBlock Text="プロンプト設定をリセット" />
+                </Button>
+
                 <Border
                     Margin="0,12,0,0"
                     Padding="0,16,0,0"
@@ -177,6 +223,7 @@
             </StackPanel>
         </ScrollViewer>
     </Grid>
+    </materialDesign:DialogHost>
 
 
 </Window>

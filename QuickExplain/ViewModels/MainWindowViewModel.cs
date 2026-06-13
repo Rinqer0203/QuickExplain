@@ -61,6 +61,7 @@ namespace QuickExplain
             ApiRequestManager.Instance.RegisterProgressReceiver(this);
             ApiRequestManager.Instance.RequestStarted += OnRequestStarted;
             ApiRequestManager.Instance.RequestCompleted += OnRequestCompleted;
+            AppConfig.Instance.SelectedPromptChanged += OnSelectedPromptChanged;
             _ = CheckForUpdatesOnStartupAsync();
         }
 
@@ -367,6 +368,18 @@ namespace QuickExplain
                 && ChatMessages.Any(message =>
                     message.Role == "assistant" &&
                     string.IsNullOrWhiteSpace(message.Text) == false);
+        }
+
+        private void OnSelectedPromptChanged()
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                SelectedPromptProfile = AppConfig.Instance.GetSelectedPromptProfile();
+                return;
+            }
+
+            dispatcher.BeginInvoke(new Action(() => SelectedPromptProfile = AppConfig.Instance.GetSelectedPromptProfile()));
         }
     }
 }
