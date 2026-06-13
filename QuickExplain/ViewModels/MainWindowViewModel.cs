@@ -40,6 +40,9 @@ namespace QuickExplain
         private string _questionText = string.Empty;
 
         [ObservableProperty]
+        private bool _showQuickQuestions;
+
+        [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(UpdateApplicationCommand))]
         private bool _isUpdateAvailable;
 
@@ -53,6 +56,8 @@ namespace QuickExplain
         public MainWindowViewModel()
         {
             ApiRequestManager.Instance.RegisterProgressReceiver(this);
+            ApiRequestManager.Instance.RequestStarted += OnRequestStarted;
+            ApiRequestManager.Instance.RequestCompleted += OnRequestCompleted;
             _ = CheckForUpdatesOnStartupAsync();
         }
 
@@ -68,6 +73,18 @@ namespace QuickExplain
             var text = QuestionText;
             QuestionText = string.Empty;
             await SubmitMessageAsync(text, ChatMessages.Count == 0);
+        }
+
+        [RelayCommand]
+        private async Task SendQuickQuestion(QuickQuestion? quickQuestion)
+        {
+            if (quickQuestion == null || string.IsNullOrWhiteSpace(quickQuestion.Text))
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
+            await SubmitMessageAsync(quickQuestion.Text, false);
         }
 
         [RelayCommand]
@@ -119,6 +136,7 @@ namespace QuickExplain
             ChatMessages.Clear();
             QuestionText = string.Empty;
             _streamingMessage = null;
+            ShowQuickQuestions = false;
         }
 
         private async Task CheckForUpdatesOnStartupAsync()
@@ -243,7 +261,20 @@ namespace QuickExplain
             if (value == null)
                 return;
 
-            AppConfig.Instance.SelectedPromptId = value.Id;
+            AppConfig.Instance.UpdateSelectedPromptId(value.Id);
+        }
+
+        private void OnRequestStarted()
+        {
+            ShowQuickQuestions = false;
+        }
+
+        private void OnRequestCompleted(bool success)
+        {
+            ShowQuickQuestions = success
+                && ChatMessages.Any(message =>
+                    message.Role == "assistant" &&
+                    string.IsNullOrWhiteSpace(message.Text) == false);
         }
     }
 }

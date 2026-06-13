@@ -201,6 +201,7 @@ namespace QuickExplain.Models
         public event Action<HotKeyDefinition>? GlobalHotKeyChanged;
         public event Action<HotKeyDefinition>? ScreenshotHotKeyChanged;
         public event Action<ThemeMode>? ThemeModeChanged;
+        public event Action? SelectedPromptChanged;
 
         public void UpdateGlobalHotKey(HotKeyDefinition hotKey)
         {
@@ -227,6 +228,15 @@ namespace QuickExplain.Models
 
             ThemeMode = themeMode;
             ThemeModeChanged?.Invoke(themeMode);
+        }
+
+        public void UpdateSelectedPromptId(string promptId)
+        {
+            if (SelectedPromptId == promptId)
+                return;
+
+            SelectedPromptId = promptId;
+            SelectedPromptChanged?.Invoke();
         }
 
         public PromptProfile GetSelectedPromptProfile()
@@ -263,6 +273,7 @@ namespace QuickExplain.Models
                         profile.Name = "プロンプト";
                     if (profile.Name == "デフォルト" && profile.Instruction == LegacyDefaultSystemInstruction)
                         profile.Instruction = DefaultSystemInstruction;
+                    profile.QuickQuestions ??= new ObservableCollection<QuickQuestion>();
                 }
             }
             else

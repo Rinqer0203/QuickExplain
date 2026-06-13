@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.ObjectModel;
 
 namespace QuickExplain.Models
 {
@@ -12,5 +13,7 @@ namespace QuickExplain.Models
 
         [ObservableProperty]
         private string _instruction = string.Empty;
+
+        public ObservableCollection<QuickQuestion> QuickQuestions { get; set; } = new();
     }
 }
