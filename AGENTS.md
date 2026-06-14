@@ -40,7 +40,7 @@ QuickExplain は、Windows 向けの WPF デスクトップアプリです。ク
 - ネットワーク制限下では NuGet 脆弱性データ取得の `NU1900` 警告が出ることがあります。ビルド成功可否はエラー有無で判断してください。
 - WPF の XAML で `Window` を追加すると、生成される partial class は public になります。コンストラクタ引数に渡す ViewModel も public にしないと `CS0051` になる場合があります。
 - MaterialDesign のアイコンボタンは既存スタイル `MaterialDesignIconForegroundButton` と `materialDesign:PackIcon` を使うと既存UIに馴染みます。
-- NuGet 復元がネットワーク制限で失敗する場合は、ローカルキャッシュを使って `RestorePackagesPath=C:\Users\Tomoki\.nuget\packages` を指定すると検証できることがあります。
+- NuGet 復元がネットワーク制限で失敗する場合は、ローカルキャッシュを使って `RestorePackagesPath=%USERPROFILE%\.nuget\packages` を指定すると検証できることがあります。
 
 ## README・ドキュメントの注意
 
