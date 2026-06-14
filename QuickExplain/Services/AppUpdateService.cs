@@ -90,6 +90,7 @@ namespace QuickExplain.Services
                 }
 
                 AppConfig.Instance.SaveConfigJson();
+                StartupShortcutService.RepairIfExists();
                 await _updater.DownloadAndInstallUpdateAsync(cancellationToken);
             }
             finally

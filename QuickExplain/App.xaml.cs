@@ -31,6 +31,7 @@ namespace QuickExplain
         {
             AppPathService.SetCurrentDirectoryToApplicationDirectory();
             ExceptionHandlerManager.RegisterHandlers();
+            StartupShortcutService.RepairIfExists();
 
             const string mutexName = "QuickExplain_SingleInstance_Mutex";
             _mutex = new Mutex(true, mutexName, out bool createdNew);

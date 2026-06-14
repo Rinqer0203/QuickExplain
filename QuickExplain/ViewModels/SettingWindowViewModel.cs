@@ -2,9 +2,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickExplain.Models;
 using QuickExplain.Services;
-using IWshRuntimeLibrary;
-using System.Diagnostics;
-using System.IO;
 using System.Windows.Input;
 
 namespace QuickExplain
@@ -34,7 +31,7 @@ namespace QuickExplain
         private ThemeMode _selectedThemeMode;
 
         [ObservableProperty]
-        private bool _startupWithWindows = StartupShortcutExists();
+        private bool _startupWithWindows = StartupShortcutService.Exists();
 
         [ObservableProperty]
         private bool _minimizeToTray = AppConfig.Instance.MinimizeToTray;
@@ -137,35 +134,16 @@ namespace QuickExplain
 
         partial void OnStartupWithWindowsChanged(bool value)
         {
-            string appName = "QuickExplain";
-            string startupFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-            string shortcutPath = Path.Combine(startupFolderPath, $"{appName}.lnk");
-
-            // 実行ファイル(.exe)のフルパスを取得
-            var mainModule = Process.GetCurrentProcess().MainModule
-                 ?? throw new InvalidOperationException("現在のプロセスのメインモジュールが取得できませんでした。");
-            string exePath = mainModule.FileName;
-
             if (value)
             {
-                // スタートアップにショートカットを作成する
-                var shell = new WshShell();
-                IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
-                shortcut.TargetPath = exePath;
-                shortcut.WorkingDirectory = Path.GetDirectoryName(exePath);
-                shortcut.Description = "QuickExplain 自動起動";
-                shortcut.Save();
+                StartupShortcutService.CreateOrUpdate();
             }
             else
             {
-                // スタートアップからショートカットを削除する
-                if (System.IO.File.Exists(shortcutPath))
-                {
-                    System.IO.File.Delete(shortcutPath);
-                }
+                StartupShortcutService.Delete();
             }
 
-            var exists = StartupShortcutExists();
+            var exists = StartupShortcutService.Exists();
             if (_startupWithWindows != exists)
             {
                 _startupWithWindows = exists;
@@ -256,14 +234,6 @@ namespace QuickExplain
             if ((hotKey.Modifiers & ModifierKeys.Windows) == ModifierKeys.Windows) parts.Add("Win");
             parts.Add(hotKey.Key.ToString());
             return string.Join(" + ", parts);
-        }
-
-        private static bool StartupShortcutExists()
-        {
-            string appName = "QuickExplain";
-            string startupFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-            string shortcutPath = Path.Combine(startupFolderPath, $"{appName}.lnk");
-            return System.IO.File.Exists(shortcutPath);
         }
 
         public readonly record struct ThemeModeItem(ThemeMode Mode, string Label);
