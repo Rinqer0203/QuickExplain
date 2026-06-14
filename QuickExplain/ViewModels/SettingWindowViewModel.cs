@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using QuickExplain.Models;
 using QuickExplain.Services;
 using IWshRuntimeLibrary;
@@ -56,6 +57,10 @@ namespace QuickExplain
         [ObservableProperty]
         private string _updateStatusText = "更新を確認中です";
 
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(CheckForUpdatesCommand))]
+        private bool _isCheckingUpdate;
+
         public string AppVersionText => $"バージョン {AppUpdateService.Instance.CurrentVersion}";
 
         public SettingWindowViewModel()
@@ -88,7 +93,7 @@ namespace QuickExplain
 
             GlobalHotKeyDisplay = FormatHotKey(GlobalHotKey);
             ScreenshotHotKeyDisplay = FormatHotKey(ScreenshotHotKey);
-            _ = CheckUpdateStatusAsync();
+            _ = CheckUpdateStatusAsync(force: false);
         }
 
         public void OnClosed()
@@ -200,7 +205,18 @@ namespace QuickExplain
             ScreenshotHotKey = hotKey;
         }
 
-        private async Task CheckUpdateStatusAsync()
+        private bool CanCheckForUpdates()
+        {
+            return !IsCheckingUpdate;
+        }
+
+        [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
+        private async Task CheckForUpdates()
+        {
+            await CheckUpdateStatusAsync(force: true);
+        }
+
+        private async Task CheckUpdateStatusAsync(bool force)
         {
             if (!AppUpdateService.CanUseUpdater)
             {
@@ -208,17 +224,27 @@ namespace QuickExplain
                 return;
             }
 
-            var updateFound = await AppUpdateService.Instance.CheckForUpdatesAsync();
-            if (updateFound)
-            {
-                var latestVersion = AppUpdateService.Instance.LatestVersion;
-                UpdateStatusText = string.IsNullOrWhiteSpace(latestVersion)
-                    ? "新しいバージョンがあります"
-                    : $"新しいバージョンがあります ({latestVersion})";
-                return;
-            }
+            IsCheckingUpdate = true;
+            UpdateStatusText = "更新を確認中です";
 
-            UpdateStatusText = "最新の状態です";
+            try
+            {
+                var updateFound = await AppUpdateService.Instance.CheckForUpdatesAsync(force: force);
+                if (updateFound)
+                {
+                    var latestVersion = AppUpdateService.Instance.LatestVersion;
+                    UpdateStatusText = string.IsNullOrWhiteSpace(latestVersion)
+                        ? "新しいバージョンがあります"
+                        : $"新しいバージョンがあります ({latestVersion})";
+                    return;
+                }
+
+                UpdateStatusText = "最新の状態です";
+            }
+            finally
+            {
+                IsCheckingUpdate = false;
+            }
         }
 
         private static string FormatHotKey(HotKeyDefinition hotKey)

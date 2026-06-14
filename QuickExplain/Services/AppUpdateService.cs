@@ -39,7 +39,7 @@ namespace QuickExplain.Services
         public static bool CanUseUpdater =>
             OperatingSystem.IsWindows();
 
-        public async Task<bool> CheckForUpdatesAsync(CancellationToken cancellationToken = default)
+        public async Task<bool> CheckForUpdatesAsync(bool force = false, CancellationToken cancellationToken = default)
         {
             if (!CanUseUpdater)
                 return false;
@@ -47,7 +47,8 @@ namespace QuickExplain.Services
             await _operationLock.WaitAsync(cancellationToken);
             try
             {
-                if (_lastCheckedAt is DateTimeOffset lastCheckedAt
+                if (!force
+                    && _lastCheckedAt is DateTimeOffset lastCheckedAt
                     && DateTimeOffset.UtcNow - lastCheckedAt < CheckCacheDuration)
                 {
                     return _lastCheckResult;

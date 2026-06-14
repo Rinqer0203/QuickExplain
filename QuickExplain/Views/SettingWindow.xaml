@@ -202,6 +202,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <TextBlock
@@ -210,8 +211,22 @@
                             Text="{Binding UpdateStatusText}"
                             VerticalAlignment="Center" />
 
-                        <TextBlock
+                        <Button
                             Grid.Column="1"
+                            Width="32"
+                            Height="32"
+                            Margin="16,0,0,0"
+                            Command="{Binding CheckForUpdatesCommand}"
+                            Style="{StaticResource MaterialDesignIconForegroundButton}"
+                            ToolTip="更新を確認">
+                            <materialDesign:PackIcon
+                                Width="18"
+                                Height="18"
+                                Kind="Refresh" />
+                        </Button>
+
+                        <TextBlock
+                            Grid.Column="2"
                             Margin="16,0,0,0"
                             FontSize="13"
                             Foreground="Gray"
