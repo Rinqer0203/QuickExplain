@@ -8,7 +8,7 @@ namespace QuickExplain.Services
     {
         public const string LogFileName = "error.log";
 
-        public static string LogFilePath => Path.Combine(AppContext.BaseDirectory, LogFileName);
+        public static string LogFilePath => AppPathService.GetApplicationFilePath(LogFileName);
 
         public static void Log(string type, Exception? ex)
         {

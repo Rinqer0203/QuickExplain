@@ -29,6 +29,7 @@ namespace QuickExplain
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            AppPathService.SetCurrentDirectoryToApplicationDirectory();
             ExceptionHandlerManager.RegisterHandlers();
 
             const string mutexName = "QuickExplain_SingleInstance_Mutex";

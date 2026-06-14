@@ -1,5 +1,6 @@
 using System.Threading;
 using Updatum;
+using QuickExplain.Models;
 
 namespace QuickExplain.Services
 {
@@ -87,6 +88,7 @@ namespace QuickExplain.Services
                         return;
                 }
 
+                AppConfig.Instance.SaveConfigJson();
                 await _updater.DownloadAndInstallUpdateAsync(cancellationToken);
             }
             finally

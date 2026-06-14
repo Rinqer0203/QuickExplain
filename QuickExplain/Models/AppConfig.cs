@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
+using QuickExplain.Services;
 
 namespace QuickExplain.Models
 {
@@ -29,7 +30,7 @@ namespace QuickExplain.Models
 
         public const string ConfigFileName = "appconfig.json";
 
-        public static string ConfigFilePath => Path.Combine(AppContext.BaseDirectory, ConfigFileName);
+        public static string ConfigFilePath => AppPathService.GetApplicationFilePath(ConfigFileName);
 
         private const string DefaultSystemInstruction = "以下の入力テキストを日本語に翻訳し、その意味を簡潔に説明してください。\r\n\r\n" +
             "ユーザーから追加質問された場合は、質問に対して簡潔に答えてください。\r\n\r\n" +

@@ -9,7 +9,7 @@ namespace QuickExplain.Services
 
         public static string SaveSentImage(byte[] imageBytes, string aiProvider)
         {
-            var logDirectory = Path.Combine(AppContext.BaseDirectory, LogDirectoryName);
+            var logDirectory = Path.Combine(AppPathService.ApplicationDirectory, LogDirectoryName);
             Directory.CreateDirectory(logDirectory);
 
             var safeProviderName = string.Concat(aiProvider.Select(c => char.IsLetterOrDigit(c) ? c : '_'));
