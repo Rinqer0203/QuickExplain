@@ -29,6 +29,8 @@ namespace QuickExplain
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            ExceptionHandlerManager.RegisterHandlers();
+
             const string mutexName = "QuickExplain_SingleInstance_Mutex";
             _mutex = new Mutex(true, mutexName, out bool createdNew);
 
@@ -40,7 +42,6 @@ namespace QuickExplain
                 return;
             }
 
-            ExceptionHandlerManager.RegisterHandlers();
             base.OnStartup(e);
 
             // wpfのテーマを設定

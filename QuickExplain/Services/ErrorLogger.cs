@@ -1,22 +1,39 @@
 using System.IO;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace QuickExplain.Services
 {
     public static class ErrorLogger
     {
-        private static readonly string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "error.log");
+        public const string LogFileName = "error.log";
+
+        public static string LogFilePath => Path.Combine(AppContext.BaseDirectory, LogFileName);
 
         public static void Log(string type, Exception? ex)
         {
+            Log(type, (object?)ex);
+        }
+
+        public static void Log(string type, object? details)
+        {
             var sb = new StringBuilder();
-            sb.AppendLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {type}");
-            sb.AppendLine(ex?.ToString() ?? "例外情報が null です。");
+            sb.AppendLine($"[{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}] {type}");
+            sb.AppendLine($"Version: {typeof(ErrorLogger).Assembly.GetName().Version?.ToString() ?? "unknown"}");
+            sb.AppendLine($"OS: {RuntimeInformation.OSDescription}");
+            sb.AppendLine($".NET: {RuntimeInformation.FrameworkDescription}");
+            sb.AppendLine("Details:");
+            sb.AppendLine(details switch
+            {
+                null => "例外情報が null です。",
+                Exception ex => ex.ToString(),
+                _ => details.ToString() ?? "例外情報を文字列化できませんでした。"
+            });
             sb.AppendLine(new string('-', 80));
 
             try
             {
-                File.AppendAllText(logFilePath, sb.ToString(), Encoding.UTF8);
+                File.AppendAllText(LogFilePath, sb.ToString(), Encoding.UTF8);
             }
             catch { }
         }

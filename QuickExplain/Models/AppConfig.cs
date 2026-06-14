@@ -29,6 +29,8 @@ namespace QuickExplain.Models
 
         public const string ConfigFileName = "appconfig.json";
 
+        public static string ConfigFilePath => Path.Combine(AppContext.BaseDirectory, ConfigFileName);
+
         private const string DefaultSystemInstruction = "以下の入力テキストを日本語に翻訳し、その意味を簡潔に説明してください。\r\n\r\n" +
             "ユーザーから追加質問された場合は、質問に対して簡潔に答えてください。\r\n\r\n" +
             "追加質問への回答ルール:\r\n" +
@@ -114,16 +116,16 @@ namespace QuickExplain.Models
         private static AppConfig LoadConfig()
         {
             AppConfig? config = null;
-            if (File.Exists(ConfigFileName))
+            if (File.Exists(ConfigFilePath))
             {
                 try
                 {
-                    string json = File.ReadAllText(ConfigFileName);
+                    string json = File.ReadAllText(ConfigFilePath);
                     config = JsonSerializer.Deserialize<AppConfig>(json);
                 }
                 catch (JsonException ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error loading config file '{ConfigFileName}': {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Error loading config file '{ConfigFilePath}': {ex.Message}");
                 }
                 catch (Exception ex) // その他の予期せぬエラー
                 {
@@ -181,11 +183,11 @@ namespace QuickExplain.Models
             try
             {
                 string json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(ConfigFileName, json);
+                File.WriteAllText(ConfigFilePath, json);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error saving config file '{ConfigFileName}': {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error saving config file '{ConfigFilePath}': {ex.Message}");
             }
         }
 
