@@ -7,7 +7,7 @@ namespace QuickExplain.Services
     {
         public static AppUpdateService Instance { get; } = new();
 
-        private static readonly TimeSpan CheckCacheDuration = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan CheckCacheDuration = TimeSpan.FromHours(6);
 
         private readonly SemaphoreSlim _operationLock = new(1, 1);
         private readonly UpdatumManager _updater;
@@ -33,6 +33,8 @@ namespace QuickExplain.Services
 
         public string? LatestVersion => _updater.LatestReleaseTagVersionStr;
 
+        public event Action<bool>? UpdateAvailabilityChanged;
+
         public static bool CanUseUpdater =>
             OperatingSystem.IsWindows();
 
@@ -50,8 +52,14 @@ namespace QuickExplain.Services
                     return _lastCheckResult;
                 }
 
+                var previousResult = _lastCheckResult;
                 _lastCheckResult = await _updater.CheckForUpdatesAsync();
                 _lastCheckedAt = DateTimeOffset.UtcNow;
+                if (_lastCheckResult != previousResult)
+                {
+                    UpdateAvailabilityChanged?.Invoke(_lastCheckResult);
+                }
+
                 return _lastCheckResult;
             }
             catch

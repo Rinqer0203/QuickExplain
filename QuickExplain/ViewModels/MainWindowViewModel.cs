@@ -62,7 +62,8 @@ namespace QuickExplain
             ApiRequestManager.Instance.RequestStarted += OnRequestStarted;
             ApiRequestManager.Instance.RequestCompleted += OnRequestCompleted;
             AppConfig.Instance.SelectedPromptChanged += OnSelectedPromptChanged;
-            _ = CheckForUpdatesOnStartupAsync();
+            AppUpdateService.Instance.UpdateAvailabilityChanged += OnUpdateAvailabilityChanged;
+            _ = CheckForUpdatesIfDueAsync();
         }
 
         [RelayCommand]
@@ -189,10 +190,22 @@ namespace QuickExplain
             ShowQuickQuestions = false;
         }
 
-        private async Task CheckForUpdatesOnStartupAsync()
+        public async Task CheckForUpdatesIfDueAsync()
         {
             var updateFound = await AppUpdateService.Instance.CheckForUpdatesAsync();
             IsUpdateAvailable = updateFound;
+        }
+
+        private void OnUpdateAvailabilityChanged(bool isUpdateAvailable)
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                IsUpdateAvailable = isUpdateAvailable;
+                return;
+            }
+
+            dispatcher.Invoke(() => IsUpdateAvailable = isUpdateAvailable);
         }
 
         private bool CanUpdateApplication()

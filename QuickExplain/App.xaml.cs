@@ -203,6 +203,11 @@ namespace QuickExplain
             window.Show();
             WindowUtilities.ForceActive(window);
             window.Topmost = false;
+
+            if (window.DataContext is MainWindowViewModel mainWindowVM)
+            {
+                _ = mainWindowVM.CheckForUpdatesIfDueAsync();
+            }
         }
 
         private void ShowSimpleResultWindow()
