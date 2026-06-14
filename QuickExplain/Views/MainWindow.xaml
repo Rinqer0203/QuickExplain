@@ -286,8 +286,13 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="0,0,0,12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
                                 <Border
                                     x:Name="MessageBubble"
+                                    Grid.Row="0"
                                     Padding="10"
                                     Background="{DynamicResource ChatAiBubbleBackground}"
                                     BorderBrush="{DynamicResource ChatAiBubbleBorder}"
@@ -324,8 +329,61 @@
                                             Source="{Binding ImageSource}"
                                             Stretch="Uniform"
                                             Visibility="Visible" />
+                                        <StackPanel
+                                            x:Name="AssistantMessageActions"
+                                            Margin="5,8,0,0"
+                                            HorizontalAlignment="Left"
+                                            Orientation="Horizontal"
+                                            Visibility="{Binding CanShowAssistantActions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Button
+                                                Width="28"
+                                                Height="28"
+                                                Command="{Binding DataContext.CopyMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource MaterialDesignIconForegroundButton}"
+                                                ToolTip="コピー"
+                                                Visibility="{Binding CanCopyText, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <materialDesign:PackIcon
+                                                    Width="16"
+                                                    Height="16"
+                                                    Kind="ContentCopy" />
+                                            </Button>
+                                            <Button
+                                                Width="28"
+                                                Height="28"
+                                                Command="{Binding DataContext.ReloadMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource MaterialDesignIconForegroundButton}"
+                                                ToolTip="再生成"
+                                                Visibility="{Binding CanReload, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <materialDesign:PackIcon
+                                                    Width="16"
+                                                    Height="16"
+                                                    Kind="Reload" />
+                                            </Button>
+                                        </StackPanel>
                                     </StackPanel>
                                 </Border>
+                                <StackPanel
+                                    x:Name="UserMessageActions"
+                                    Grid.Row="1"
+                                    Margin="0,6,8,0"
+                                    HorizontalAlignment="Right"
+                                    Orientation="Horizontal"
+                                    Visibility="{Binding CanShowUserActions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <Button
+                                        Width="28"
+                                        Height="28"
+                                        Command="{Binding DataContext.CopyMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource MaterialDesignIconForegroundButton}"
+                                        ToolTip="コピー">
+                                        <materialDesign:PackIcon
+                                            Width="16"
+                                            Height="16"
+                                            Kind="ContentCopy" />
+                                    </Button>
+                                </StackPanel>
                             </Grid>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding ImageSource}" Value="{x:Null}">
@@ -373,12 +431,60 @@
             BorderThickness="2"
             CornerRadius="4">
             <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="50" />
                 </Grid.ColumnDefinitions>
+                <ItemsControl
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    Margin="8,8,8,0"
+                    ItemsSource="{Binding SelectedPromptProfile.QuickQuestions}">
+                    <ItemsControl.Style>
+                        <Style TargetType="{x:Type ItemsControl}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ShowQuickQuestions}" Value="True" />
+                                        <Condition Binding="{Binding HasItems, RelativeSource={RelativeSource Self}}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ItemsControl.Style>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button
+                                Margin="0,0,6,6"
+                                Padding="10,3"
+                                materialDesign:ButtonAssist.CornerRadius="18"
+                                Command="{Binding DataContext.SendQuickQuestionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                FontSize="13"
+                                Style="{StaticResource MaterialDesignOutlinedButton}">
+                                <TextBlock
+                                    MaxWidth="180"
+                                    Text="{Binding DisplayText}"
+                                    TextTrimming="CharacterEllipsis" />
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
                 <TextBox
                     x:Name="QuestionTextBox"
+                    Grid.Row="1"
                     Grid.Column="0"
                     Padding="10"
                     HorizontalAlignment="Stretch"
@@ -401,6 +507,7 @@
                     </TextBox.InputBindings>
                 </TextBox>
                 <Button
+                    Grid.Row="1"
                     Grid.Column="1"
                     Width="40"
                     Height="40"

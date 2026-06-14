@@ -123,6 +123,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!--  バツボタン  -->
@@ -161,8 +162,50 @@
                     IsToolBarVisible="False"
                     VerticalScrollBarVisibility="Auto" />
 
-                <TextBox
+                <ItemsControl
                     Grid.Row="1"
+                    Margin="10,0,10,6"
+                    ItemsSource="{Binding QuickQuestions}">
+                    <ItemsControl.Style>
+                        <Style TargetType="{x:Type ItemsControl}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ShowQuickQuestions}" Value="True" />
+                                        <Condition Binding="{Binding HasItems, RelativeSource={RelativeSource Self}}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ItemsControl.Style>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button
+                                Margin="0,0,6,6"
+                                Padding="9,2"
+                                materialDesign:ButtonAssist.CornerRadius="18"
+                                Command="{Binding DataContext.SendQuickQuestionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                FontSize="12"
+                                Style="{StaticResource MaterialDesignOutlinedButton}">
+                                <TextBlock
+                                    MaxWidth="150"
+                                    Text="{Binding DisplayText}"
+                                    TextTrimming="CharacterEllipsis" />
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBox
+                    Grid.Row="2"
                     Margin="10,0,10,0"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"

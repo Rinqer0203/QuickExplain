@@ -38,7 +38,7 @@ namespace QuickExplain.ViewModels
             if (value == null)
                 return;
 
-            AppConfig.Instance.SelectedPromptId = value.Id;
+            AppConfig.Instance.UpdateSelectedPromptId(value.Id);
             PromptName = value.Name;
             PromptInstruction = value.Instruction;
         }
@@ -87,6 +87,29 @@ namespace QuickExplain.ViewModels
                 index = PromptProfiles.Count - 1;
 
             SelectedPromptProfile = PromptProfiles[index];
+        }
+
+        [RelayCommand]
+        private void AddQuickQuestion()
+        {
+            if (SelectedPromptProfile == null)
+                return;
+
+            var quickQuestion = new QuickQuestion
+            {
+                Title = "新しい質問",
+                Text = "新しい質問"
+            };
+            SelectedPromptProfile.QuickQuestions.Add(quickQuestion);
+        }
+
+        [RelayCommand]
+        private void RemoveQuickQuestion(QuickQuestion? quickQuestion)
+        {
+            if (SelectedPromptProfile == null || quickQuestion == null)
+                return;
+
+            SelectedPromptProfile.QuickQuestions.Remove(quickQuestion);
         }
     }
 }

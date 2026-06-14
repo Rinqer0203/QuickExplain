@@ -64,7 +64,7 @@
                     Text="{Binding PromptName, UpdateSourceTrigger=PropertyChanged}" />
 
                 <TextBox
-                    Height="260"
+                    Height="220"
                     Margin="0,0,0,20"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
@@ -77,6 +77,78 @@
                     Text="{Binding PromptInstruction, UpdateSourceTrigger=PropertyChanged}"
                     TextAlignment="Left"
                     TextWrapping="Wrap" />
+
+                <TextBlock
+                    Margin="0,0,0,10"
+                    FontSize="16"
+                    Text="クイック質問" />
+
+                <ItemsControl ItemsSource="{Binding SelectedPromptProfile.QuickQuestions}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="40" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBox
+                                    Grid.Column="0"
+                                    Margin="0,0,8,0"
+                                    VerticalContentAlignment="Center"
+                                    materialDesign:HintAssist.Hint="表示名"
+                                    materialDesign:TextFieldAssist.DecorationVisibility="Visible"
+                                    FontSize="14"
+                                    Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                    Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <TextBox
+                                    Grid.Column="1"
+                                    Margin="0,0,8,0"
+                                    VerticalContentAlignment="Center"
+                                    materialDesign:HintAssist.Hint="質問内容"
+                                    materialDesign:TextFieldAssist.DecorationVisibility="Visible"
+                                    AcceptsReturn="True"
+                                    FontSize="14"
+                                    MaxHeight="120"
+                                    MinHeight="48"
+                                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                    Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                    Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                    TextWrapping="Wrap" />
+
+                                <Button
+                                    Grid.Column="2"
+                                    Width="32"
+                                    Height="32"
+                                    Command="{Binding DataContext.RemoveQuickQuestionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource MaterialDesignIconForegroundButton}"
+                                    ToolTip="削除">
+                                    <materialDesign:PackIcon
+                                        Width="18"
+                                        Height="18"
+                                        Kind="Delete" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Button
+                    Width="36"
+                    Height="36"
+                    Margin="0,2,0,10"
+                    HorizontalAlignment="Left"
+                    Command="{Binding AddQuickQuestionCommand}"
+                    Style="{StaticResource MaterialDesignIconForegroundButton}"
+                    ToolTip="クイック質問を追加">
+                    <materialDesign:PackIcon
+                        Width="20"
+                        Height="20"
+                        Kind="Plus" />
+                </Button>
             </StackPanel>
         </ScrollViewer>
     </Grid>

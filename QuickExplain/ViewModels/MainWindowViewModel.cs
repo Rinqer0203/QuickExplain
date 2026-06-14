@@ -40,6 +40,12 @@ namespace QuickExplain
         private string _questionText = string.Empty;
 
         [ObservableProperty]
+        private bool _showQuickQuestions;
+
+        [ObservableProperty]
+        private bool _isRequesting;
+
+        [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(UpdateApplicationCommand))]
         private bool _isUpdateAvailable;
 
@@ -53,6 +59,9 @@ namespace QuickExplain
         public MainWindowViewModel()
         {
             ApiRequestManager.Instance.RegisterProgressReceiver(this);
+            ApiRequestManager.Instance.RequestStarted += OnRequestStarted;
+            ApiRequestManager.Instance.RequestCompleted += OnRequestCompleted;
+            AppConfig.Instance.SelectedPromptChanged += OnSelectedPromptChanged;
             _ = CheckForUpdatesOnStartupAsync();
         }
 
@@ -68,6 +77,64 @@ namespace QuickExplain
             var text = QuestionText;
             QuestionText = string.Empty;
             await SubmitMessageAsync(text, ChatMessages.Count == 0);
+        }
+
+        [RelayCommand]
+        private async Task SendQuickQuestion(QuickQuestion? quickQuestion)
+        {
+            if (quickQuestion == null || string.IsNullOrWhiteSpace(quickQuestion.Text))
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
+            await SubmitMessageAsync(quickQuestion.Text, false);
+        }
+
+        [RelayCommand]
+        private static void CopyMessage(ChatMessage? message)
+        {
+            if (message == null || string.IsNullOrWhiteSpace(message.Text))
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
+            System.Windows.Clipboard.SetText(message.Text);
+        }
+
+        [RelayCommand]
+        private async Task ReloadMessage(ChatMessage? message)
+        {
+            if (IsRequesting || message == null || message.IsAssistant == false)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
+            var index = ChatMessages.IndexOf(message);
+            if (index <= 0 || IsImageResponse(index))
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
+            RemoveMessagesFrom(index);
+            RebuildRequestMessages();
+
+            _streamingMessage = new ChatMessage("assistant", "AI", string.Empty)
+            {
+                IsStreaming = true
+            };
+            ChatMessages.Add(_streamingMessage);
+
+            var result = await ApiRequestManager.Instance.RequestTranslation();
+            if (_streamingMessage != null)
+            {
+                _streamingMessage.Text = result;
+                _streamingMessage.IsStreaming = false;
+                _streamingMessage = null;
+            }
         }
 
         [RelayCommand]
@@ -119,6 +186,7 @@ namespace QuickExplain
             ChatMessages.Clear();
             QuestionText = string.Empty;
             _streamingMessage = null;
+            ShowQuickQuestions = false;
         }
 
         private async Task CheckForUpdatesOnStartupAsync()
@@ -173,13 +241,17 @@ namespace QuickExplain
             ChatMessages.Add(new ChatMessage("user", "あなた", text));
             instance.AddUserMessage(text);
 
-            _streamingMessage = new ChatMessage("assistant", "AI", string.Empty);
+            _streamingMessage = new ChatMessage("assistant", "AI", string.Empty)
+            {
+                IsStreaming = true
+            };
             ChatMessages.Add(_streamingMessage);
 
             var result = await instance.RequestTranslation();
             if (_streamingMessage != null)
             {
                 _streamingMessage.Text = result;
+                _streamingMessage.IsStreaming = false;
                 _streamingMessage = null;
             }
 
@@ -201,13 +273,18 @@ namespace QuickExplain
             var imageSource = CreateImageSource(imageBytes);
             ChatMessages.Add(new ChatMessage("user", "あなた", string.Empty, imageSource));
 
-            _streamingMessage = new ChatMessage("assistant", "AI", string.Empty);
+            _streamingMessage = new ChatMessage("assistant", "AI", string.Empty)
+            {
+                IsStreaming = true,
+                SupportsReload = false
+            };
             ChatMessages.Add(_streamingMessage);
 
             var result = await instance.RequestImageQuestion(imageBytes);
             if (_streamingMessage != null)
             {
                 _streamingMessage.Text = result;
+                _streamingMessage.IsStreaming = false;
                 _streamingMessage = null;
             }
 
@@ -233,6 +310,38 @@ namespace QuickExplain
             }
         }
 
+        private void RemoveMessagesFrom(int startIndex)
+        {
+            for (var i = ChatMessages.Count - 1; i >= startIndex; i--)
+                ChatMessages.RemoveAt(i);
+        }
+
+        private void RebuildRequestMessages()
+        {
+            var messages = ChatMessages
+                .Where(message => message.IsStreaming == false)
+                .Select(message =>
+                {
+                    var text = message.Text;
+                    if (message.IsUser && message.ImageSource != null && string.IsNullOrWhiteSpace(text))
+                        text = "[画像]";
+
+                    var role = message.IsAssistant ? "model" : "user";
+                    return (role, text);
+                });
+
+            ApiRequestManager.Instance.SetMessages(messages);
+        }
+
+        private bool IsImageResponse(int assistantMessageIndex)
+        {
+            var previousUserMessage = ChatMessages
+                .Take(assistantMessageIndex)
+                .LastOrDefault(message => message.IsUser);
+
+            return previousUserMessage?.ImageSource != null;
+        }
+
         partial void OnSelectedAiModelChanged(AiModel value)
         {
             AppConfig.Instance.SelectedAiModel = value;
@@ -243,7 +352,34 @@ namespace QuickExplain
             if (value == null)
                 return;
 
-            AppConfig.Instance.SelectedPromptId = value.Id;
+            AppConfig.Instance.UpdateSelectedPromptId(value.Id);
+        }
+
+        private void OnRequestStarted()
+        {
+            IsRequesting = true;
+            ShowQuickQuestions = false;
+        }
+
+        private void OnRequestCompleted(bool success)
+        {
+            IsRequesting = false;
+            ShowQuickQuestions = success
+                && ChatMessages.Any(message =>
+                    message.Role == "assistant" &&
+                    string.IsNullOrWhiteSpace(message.Text) == false);
+        }
+
+        private void OnSelectedPromptChanged()
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                SelectedPromptProfile = AppConfig.Instance.GetSelectedPromptProfile();
+                return;
+            }
+
+            dispatcher.BeginInvoke(new Action(() => SelectedPromptProfile = AppConfig.Instance.GetSelectedPromptProfile()));
         }
     }
 }

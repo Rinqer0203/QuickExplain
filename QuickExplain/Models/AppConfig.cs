@@ -29,23 +29,14 @@ namespace QuickExplain.Models
 
         public const string ConfigFileName = "appconfig.json";
 
-        private const string LegacyDefaultSystemInstruction = "入力内容を`入力解釈ルール`に基づいて判別し、それに応じた日本語を`出力フォーマット`に従って出力してください。\r\n\r\n" +
-            "```入力解釈ルール\r\n" +
-            "if english:\r\n" +
-            "    if 文脈を持つ文章の場合:\r\n" +
-            "        日本語として自然で意味が正確に対応する文章に翻訳\r\n" +
-            "    elif 単語 or 略語 or 短い語句:\r\n" +
-            "        翻訳文は作らず、日本語での意味や用法を簡潔に説明\r\n" +
-            "else:\r\n" +
-            "    簡潔な説明\r\n" +
-            "    if 難しい漢字や単語が含まれている:\r\n" +
-            "        読み方や意味も簡潔に説明\r\n" +
-            "```\r\n\r\n" +
-            "# 出力フォーマット\r\n" +
-            "- プレーンテキストのみ\r\n" +
-            "- 原文の反復、判断理由、内部思考は出力しない";
-
         private const string DefaultSystemInstruction = "以下の入力テキストを日本語に翻訳し、その意味を簡潔に説明してください。\r\n\r\n" +
+            "ユーザーから追加質問された場合は、質問に対して簡潔に答えてください。\r\n\r\n" +
+            "追加質問への回答ルール:\r\n" +
+            "- 入力が英語の場合は、元の英語表現について答える\r\n" +
+            "- 入力が英語の場合、読み方は英語としての発音をカタカナで答える\r\n" +
+            "- 入力が英語の場合、例文は英語の自然な例文を作る\r\n" +
+            "- 入力が英語の場合、使い分けは英語の類似表現との違いを説明する\r\n" +
+            "- 入力が日本語の場合だけ、日本語の読み・日本語の例文・日本語表現の使い分けを答える\r\n\r\n" +
             "出力ルール:\r\n" +
             "- 必要に応じてMarkdown記法を使用する\r\n" +
             "- 原文を繰り返さない\r\n" +
@@ -58,6 +49,8 @@ namespace QuickExplain.Models
             "入力: Preferred 2FA method\r\n\r\n" +
             "推奨される二要素認証（2FA）の方法\r\n\r\n" +
             "意味：アカウントのログイン時に、パスワードに加えて本人確認を行うための、望ましい認証手段を指します。";
+
+        private const string DefaultCustomSystemInstruction = "以下の単語について説明してください\n";
 
         // ここから先はJsonSerializerでシリアライズされるプロパティ
         public string GoogleApiKey { get; set; } = string.Empty;
@@ -88,7 +81,7 @@ namespace QuickExplain.Models
 
         public string SystemInstruction { get; set; } = DefaultSystemInstruction;
 
-        public string CustomSystemInstruction { get; set; } = "以下の単語について説明してください\n";
+        public string CustomSystemInstruction { get; set; } = DefaultCustomSystemInstruction;
 
         public ObservableCollection<PromptProfile> PromptProfiles { get; set; } = new();
 
@@ -138,8 +131,6 @@ namespace QuickExplain.Models
                 }
             }
             var loadedConfig = config ?? new AppConfig();
-            if (loadedConfig.SystemInstruction == LegacyDefaultSystemInstruction)
-                loadedConfig.SystemInstruction = DefaultSystemInstruction;
 
             if (loadedConfig.AIModels.Length > 0)
             {
@@ -201,6 +192,7 @@ namespace QuickExplain.Models
         public event Action<HotKeyDefinition>? GlobalHotKeyChanged;
         public event Action<HotKeyDefinition>? ScreenshotHotKeyChanged;
         public event Action<ThemeMode>? ThemeModeChanged;
+        public event Action? SelectedPromptChanged;
 
         public void UpdateGlobalHotKey(HotKeyDefinition hotKey)
         {
@@ -229,6 +221,29 @@ namespace QuickExplain.Models
             ThemeModeChanged?.Invoke(themeMode);
         }
 
+        public void UpdateSelectedPromptId(string promptId)
+        {
+            if (SelectedPromptId == promptId)
+                return;
+
+            SelectedPromptId = promptId;
+            SelectedPromptChanged?.Invoke();
+        }
+
+        public void ResetPromptProfiles()
+        {
+            SystemInstruction = DefaultSystemInstruction;
+            CustomSystemInstruction = DefaultCustomSystemInstruction;
+            UseCustomInstruction = false;
+
+            PromptProfiles.Clear();
+            foreach (var profile in CreateDefaultPromptProfiles())
+                PromptProfiles.Add(profile);
+
+            SelectedPromptId = PromptProfiles[0].Id;
+            SelectedPromptChanged?.Invoke();
+        }
+
         public PromptProfile GetSelectedPromptProfile()
         {
             if (PromptProfiles.Count == 0)
@@ -236,7 +251,8 @@ namespace QuickExplain.Models
                 var fallback = new PromptProfile
                 {
                     Name = "デフォルト",
-                    Instruction = SystemInstruction
+                    Instruction = SystemInstruction,
+                    QuickQuestions = CreateDefaultQuickQuestions()
                 };
                 PromptProfiles.Add(fallback);
                 SelectedPromptId = fallback.Id;
@@ -261,25 +277,12 @@ namespace QuickExplain.Models
                         profile.Id = Guid.NewGuid().ToString("N");
                     if (string.IsNullOrWhiteSpace(profile.Name))
                         profile.Name = "プロンプト";
-                    if (profile.Name == "デフォルト" && profile.Instruction == LegacyDefaultSystemInstruction)
-                        profile.Instruction = DefaultSystemInstruction;
+                    profile.QuickQuestions ??= new ObservableCollection<QuickQuestion>();
                 }
             }
             else
             {
-                config.PromptProfiles = new ObservableCollection<PromptProfile>
-                {
-                    new PromptProfile
-                    {
-                        Name = "デフォルト",
-                        Instruction = config.SystemInstruction
-                    },
-                    new PromptProfile
-                    {
-                        Name = "カスタム",
-                        Instruction = config.CustomSystemInstruction
-                    }
-                };
+                config.PromptProfiles = CreateDefaultPromptProfiles(config.SystemInstruction, config.CustomSystemInstruction);
             }
 
             if (string.IsNullOrWhiteSpace(config.SelectedPromptId))
@@ -298,5 +301,41 @@ namespace QuickExplain.Models
                 config.SelectedPromptId = config.PromptProfiles[0].Id;
             }
         }
+
+        private static ObservableCollection<PromptProfile> CreateDefaultPromptProfiles(
+            string? defaultInstruction = null,
+            string? customInstruction = null) =>
+        [
+            new PromptProfile
+            {
+                Name = "デフォルト",
+                Instruction = defaultInstruction ?? DefaultSystemInstruction,
+                QuickQuestions = CreateDefaultQuickQuestions()
+            },
+            new PromptProfile
+            {
+                Name = "カスタム",
+                Instruction = customInstruction ?? DefaultCustomSystemInstruction
+            }
+        ];
+
+        private static ObservableCollection<QuickQuestion> CreateDefaultQuickQuestions() =>
+        [
+            new QuickQuestion
+            {
+                Title = "読み方は？",
+                Text = "この入力の読み方を教えてください。英語の場合は英語としての発音をカタカナで答えてください。"
+            },
+            new QuickQuestion
+            {
+                Title = "例文を作って",
+                Text = "自然な例文を3つ作ってください。英語入力の場合は英語の例文を作ってください。"
+            },
+            new QuickQuestion
+            {
+                Title = "使い分けは？",
+                Text = "似た表現との違いや使い分けを簡潔に教えてください。英語入力の場合は英語の類似表現と比較してください。"
+            }
+        ];
     }
 }
