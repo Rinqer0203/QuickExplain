@@ -12,11 +12,12 @@ namespace QuickExplain.Services.AiProviders
             Action<string> onGetContent,
             Action<string> onStatus,
             Action<string> onError,
-            Action<TokenUsage> onTokenUsage)
+            Action<TokenUsage> onTokenUsage,
+            CancellationToken cancellationToken)
         {
             return Task.Run(async () =>
             {
-                await Task.Delay(500);
+                await Task.Delay(500, cancellationToken);
 
                 var sb = new StringBuilder();
                 sb.AppendLine("Dummy Ollama API Response:");
@@ -36,8 +37,9 @@ namespace QuickExplain.Services.AiProviders
                 const int chunkSize = 10;
                 for (var i = 0; i < fullText.Length; i += chunkSize)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     onGetContent(fullText.Substring(i, Math.Min(chunkSize, fullText.Length - i)));
-                    await Task.Delay(50);
+                    await Task.Delay(50, cancellationToken);
                 }
 
                 onTokenUsage(new TokenUsage(120, 80, 200));

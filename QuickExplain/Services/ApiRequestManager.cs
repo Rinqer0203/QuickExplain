@@ -25,6 +25,7 @@ namespace QuickExplain.Services
         private string? _pendingProgressText;
         private DispatcherTimer? _progressUpdateTimer;
         private bool _isProgressUpdateTimerActive;
+        private CancellationTokenSource? _requestCancellationTokenSource;
         public TokenUsage? LastTokenUsage { get; private set; }
         public event Action? RequestStarted;
         public event Action<bool>? RequestCompleted;
@@ -57,6 +58,11 @@ namespace QuickExplain.Services
         }
 
         private bool _isRequesting = false;
+
+        public void CancelCurrentRequest()
+        {
+            _requestCancellationTokenSource?.Cancel();
+        }
 
         public void AddUserMessage(string text)
         {
@@ -95,16 +101,25 @@ namespace QuickExplain.Services
 
         public async Task<string> RequestTranslation()
         {
+            return (await RequestTranslationResult()).Text;
+        }
+
+        public async Task<AiRequestResult> RequestTranslationResult()
+        {
             if (_isRequesting)
             {
                 System.Media.SystemSounds.Beep.Play();
-                return "リクエスト中です";
+                return new AiRequestResult("リクエスト中です", null, false, false);
             }
 
             _isRequesting = true;
+            using var cancellationTokenSource = new CancellationTokenSource();
+            _requestCancellationTokenSource = cancellationTokenSource;
+            var cancellationToken = cancellationTokenSource.Token;
             RequestStarted?.Invoke();
 
             var success = false;
+            var canceled = false;
             try
             {
                 _sb.Clear();
@@ -114,13 +129,13 @@ namespace QuickExplain.Services
                 if (string.IsNullOrWhiteSpace(config.SelectedAiModel.Name))
                 {
                     _requestHadError = true;
-                    return "使用するAIモデルが設定されていません。モデル編集からモデルを追加してください。";
+                    return new AiRequestResult("使用するAIモデルが設定されていません。モデル編集からモデルを追加してください。", null, false, false);
                 }
 
                 if (!_providerRegistry.TryGetProvider(config.SelectedAiModel.Type, out var provider))
                 {
                     _requestHadError = true;
-                    return "サポートされていないAIモデルです";
+                    return new AiRequestResult("サポートされていないAIモデルです", null, false, false);
                 }
 
                 var request = new AiProviderRequest(
@@ -128,7 +143,7 @@ namespace QuickExplain.Services
                     GetSystemInstruction(),
                     _messages.ToArray());
                 OnStatusAction("応答を待っています...");
-                await provider.StreamGenerateContentAsync(request, OnGetContentAction, OnStatusAction, OnErrorAction, OnTokenUsageAction);
+                await provider.StreamGenerateContentAsync(request, OnGetContentAction, OnStatusAction, OnErrorAction, OnTokenUsageAction, cancellationToken);
 
                 var result = _sb.ToString();
                 FlushProgressReceivers(result);
@@ -138,30 +153,55 @@ namespace QuickExplain.Services
                 _messages.Add(("model", result));
 
                 success = !_requestHadError;
-                return result;
+                return new AiRequestResult(result, LastTokenUsage, success, false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                canceled = true;
+                _requestHadError = true;
+                var result = _sb.ToString();
+                if (string.IsNullOrWhiteSpace(result))
+                    result = "キャンセルされました";
+                else
+                    result = $"{result}{Environment.NewLine}{Environment.NewLine}(キャンセルされました)";
+
+                FlushProgressReceivers(result);
+                return new AiRequestResult(result, null, false, true);
             }
             finally
             {
+                if (ReferenceEquals(_requestCancellationTokenSource, cancellationTokenSource))
+                    _requestCancellationTokenSource = null;
+
                 _isRequesting = false;
-                RequestCompleted?.Invoke(success);
+                RequestCompleted?.Invoke(success && !canceled);
             }
         }
 
         public async Task<string> RequestImageQuestion(byte[] imageBytes)
         {
+            return (await RequestImageQuestionResult(imageBytes)).Text;
+        }
+
+        public async Task<AiRequestResult> RequestImageQuestionResult(byte[] imageBytes)
+        {
             if (_isRequesting)
             {
                 System.Media.SystemSounds.Beep.Play();
-                return "リクエスト中です";
+                return new AiRequestResult("リクエスト中です", null, false, false);
             }
 
             if (imageBytes == null || imageBytes.Length == 0)
-                return "画像データが空です";
+                return new AiRequestResult("画像データが空です", null, false, false);
 
             _isRequesting = true;
+            using var cancellationTokenSource = new CancellationTokenSource();
+            _requestCancellationTokenSource = cancellationTokenSource;
+            var cancellationToken = cancellationTokenSource.Token;
             RequestStarted?.Invoke();
 
             var success = false;
+            var canceled = false;
             try
             {
                 _sb.Clear();
@@ -173,13 +213,13 @@ namespace QuickExplain.Services
                 if (string.IsNullOrWhiteSpace(config.SelectedAiModel.Name))
                 {
                     _requestHadError = true;
-                    return "使用するAIモデルが設定されていません。モデル編集からモデルを追加してください。";
+                    return new AiRequestResult("使用するAIモデルが設定されていません。モデル編集からモデルを追加してください。", null, false, false);
                 }
 
                 if (!_providerRegistry.TryGetProvider(config.SelectedAiModel.Type, out var provider))
                 {
                     _requestHadError = true;
-                    return "サポートされていないAIモデルです";
+                    return new AiRequestResult("サポートされていないAIモデルです", null, false, false);
                 }
 
                 var request = new AiProviderRequest(
@@ -188,7 +228,7 @@ namespace QuickExplain.Services
                     _messages.ToArray(),
                     imageBytes);
                 OnStatusAction("応答を待っています...");
-                await provider.StreamGenerateContentAsync(request, OnGetContentAction, OnStatusAction, OnErrorAction, OnTokenUsageAction);
+                await provider.StreamGenerateContentAsync(request, OnGetContentAction, OnStatusAction, OnErrorAction, OnTokenUsageAction, cancellationToken);
 
                 var result = _sb.ToString();
                 FlushProgressReceivers(result);
@@ -196,12 +236,28 @@ namespace QuickExplain.Services
                 _messages.Add(("model", result));
 
                 success = !_requestHadError;
-                return result;
+                return new AiRequestResult(result, LastTokenUsage, success, false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                canceled = true;
+                _requestHadError = true;
+                var result = _sb.ToString();
+                if (string.IsNullOrWhiteSpace(result))
+                    result = "キャンセルされました";
+                else
+                    result = $"{result}{Environment.NewLine}{Environment.NewLine}(キャンセルされました)";
+
+                FlushProgressReceivers(result);
+                return new AiRequestResult(result, null, false, true);
             }
             finally
             {
+                if (ReferenceEquals(_requestCancellationTokenSource, cancellationTokenSource))
+                    _requestCancellationTokenSource = null;
+
                 _isRequesting = false;
-                RequestCompleted?.Invoke(success);
+                RequestCompleted?.Invoke(success && !canceled);
             }
         }
 

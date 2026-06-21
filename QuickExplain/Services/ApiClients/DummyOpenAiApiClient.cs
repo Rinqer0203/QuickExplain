@@ -10,11 +10,12 @@ namespace QuickExplain.Services.ApiClients
             OpenAiApiRequestModels.Request request,
             Action<string> onGetContent,
             Action<string> onError,
-            Action<TokenUsage> onTokenUsage)
+            Action<TokenUsage> onTokenUsage,
+            CancellationToken cancellationToken)
         {
             return Task.Run(async () =>
             {
-                await Task.Delay(500); // 初期ディレイ
+                await Task.Delay(500, cancellationToken); // 初期ディレイ
 
                 var sb = new StringBuilder();
                 sb.AppendLine("Dummy OpenAI API Response:");
@@ -32,9 +33,10 @@ namespace QuickExplain.Services.ApiClients
 
                 for (int i = 0; i < fullText.Length; i += chunkSize)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     string chunk = fullText.Substring(i, Math.Min(chunkSize, fullText.Length - i));
                     onGetContent.Invoke(chunk);
-                    await Task.Delay(50); // 擬似ストリーム間隔
+                    await Task.Delay(50, cancellationToken); // 擬似ストリーム間隔
                 }
 
                 onTokenUsage(new TokenUsage(140, 90, 230, 12));

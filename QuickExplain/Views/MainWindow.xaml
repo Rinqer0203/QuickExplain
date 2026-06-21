@@ -519,12 +519,36 @@
                     Grid.Column="1"
                     Width="40"
                     Height="40"
-                    Command="{Binding SendQuestionCommand}"
+                    Command="{Binding SendOrCancelQuestionCommand}"
                     Style="{StaticResource MaterialDesignIconForegroundButton}">
+                    <Button.ToolTip>
+                        <TextBlock>
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Text" Value="送信" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRequesting}" Value="True">
+                                            <Setter Property="Text" Value="キャンセル" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Button.ToolTip>
                     <materialDesign:PackIcon
                         Width="22"
-                        Height="22"
-                        Kind="SendVariant" />
+                        Height="22">
+                        <materialDesign:PackIcon.Style>
+                            <Style TargetType="{x:Type materialDesign:PackIcon}">
+                                <Setter Property="Kind" Value="SendVariant" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRequesting}" Value="True">
+                                        <Setter Property="Kind" Value="Cancel" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </materialDesign:PackIcon.Style>
+                    </materialDesign:PackIcon>
                 </Button>
 
             </Grid>

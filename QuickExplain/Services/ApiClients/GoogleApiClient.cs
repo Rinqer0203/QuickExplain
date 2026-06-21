@@ -31,7 +31,8 @@ namespace QuickExplain.Services.ApiClients
             string modelName,
             Action<string> onGetContent,
             Action<string> onError,
-            Action<TokenUsage> onTokenUsage)
+            Action<TokenUsage> onTokenUsage,
+            CancellationToken cancellationToken)
         {
             var path = $"{BaseUrl}models/{modelName}:streamGenerateContent?alt=sse&key={apiKey}";
             var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -43,19 +44,20 @@ namespace QuickExplain.Services.ApiClients
             requestMessage.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
             requestMessage.Content = new StringContent(JsonSerializer.Serialize(request, jsonOptions), Encoding.UTF8, "application/json");
 
-            using var response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead);
+            using var response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 await SseStreamProcessor.HandleErrorAsync(response, onError);
                 return;
             }
 
-            using var stream = await response.Content.ReadAsStreamAsync();
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             await Task.Run(() => SseStreamProcessor.ProcessStreamAsync(
                 stream,
                 json => ExtractContentFromJson(json, onTokenUsage),
                 onGetContent,
-                onError));
+                onError,
+                cancellationToken));
         }
 
         /// <summary>

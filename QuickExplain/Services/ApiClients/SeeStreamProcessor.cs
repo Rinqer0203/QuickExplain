@@ -10,12 +10,14 @@ namespace QuickExplain.Services.ApiClients
             Stream stream,
             Func<string, string?> extractContentFromJson,
             Action<string> onGetContent,
-            Action<string> onError)
+            Action<string> onError,
+            CancellationToken cancellationToken)
         {
             using var reader = new StreamReader(stream, Encoding.UTF8);
             while (!reader.EndOfStream)
             {
-                var line = await reader.ReadLineAsync().ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(line) || !line.StartsWith("data:"))
                     continue;
 

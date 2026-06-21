@@ -19,12 +19,13 @@ namespace QuickExplain.Services.AiProviders
             Action<string> onGetContent,
             Action<string> onStatus,
             Action<string> onError,
-            Action<TokenUsage> onTokenUsage)
+            Action<TokenUsage> onTokenUsage,
+            CancellationToken cancellationToken)
         {
             var messages = request.Messages.ToArray();
             var baseRequest = OpenAiApiRequestModels.CreateRequest(request.ModelName, request.SystemInstruction, messages.AsSpan());
             if (request.ImageBytes == null)
-                return _client.StreamGenerateContentAsync(AppConfig.Instance.OpenAiApiKey, baseRequest, onGetContent, onError, onTokenUsage);
+                return _client.StreamGenerateContentAsync(AppConfig.Instance.OpenAiApiKey, baseRequest, onGetContent, onError, onTokenUsage, cancellationToken);
 
             var imageBase64 = Convert.ToBase64String(request.ImageBytes);
             var messageList = new List<OpenAiApiRequestModels.Message>(baseRequest.messages.Length + 1);
@@ -42,7 +43,7 @@ namespace QuickExplain.Services.AiProviders
                 request.ModelName,
                 messageList.ToArray(),
                 stream_options: new OpenAiApiRequestModels.StreamOptions());
-            return _client.StreamGenerateContentAsync(AppConfig.Instance.OpenAiApiKey, imageRequest, onGetContent, onError, onTokenUsage);
+            return _client.StreamGenerateContentAsync(AppConfig.Instance.OpenAiApiKey, imageRequest, onGetContent, onError, onTokenUsage, cancellationToken);
         }
     }
 }

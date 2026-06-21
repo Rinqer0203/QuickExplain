@@ -9,6 +9,7 @@ namespace QuickExplain.Services.ApiClients
             OpenAiApiRequestModels.Request request,
             Action<string> onGetContent,
             Action<string> onError,
-            Action<TokenUsage> onTokenUsage);
+            Action<TokenUsage> onTokenUsage,
+            CancellationToken cancellationToken);
     }
 }

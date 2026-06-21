@@ -218,7 +218,7 @@
                     VerticalScrollBarVisibility="Disabled">
 
                     <TextBox.InputBindings>
-                        <KeyBinding Command="{Binding SendQuestionCommand}" Gesture="Enter" />
+                        <KeyBinding Command="{Binding SendOrCancelQuestionCommand}" Gesture="Enter" />
                     </TextBox.InputBindings>
                 </TextBox>
             </Grid>

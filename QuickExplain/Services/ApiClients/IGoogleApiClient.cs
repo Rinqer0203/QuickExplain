@@ -10,6 +10,7 @@ namespace QuickExplain.Services.ApiClients
             string modelName,
             Action<string> onGetContent,
             Action<string> onError,
-            Action<TokenUsage> onTokenUsage);
+            Action<TokenUsage> onTokenUsage,
+            CancellationToken cancellationToken);
     }
 }

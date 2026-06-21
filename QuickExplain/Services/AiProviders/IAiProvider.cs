@@ -11,6 +11,7 @@ namespace QuickExplain.Services.AiProviders
             Action<string> onGetContent,
             Action<string> onStatus,
             Action<string> onError,
-            Action<TokenUsage> onTokenUsage);
+            Action<TokenUsage> onTokenUsage,
+            CancellationToken cancellationToken);
     }
 }

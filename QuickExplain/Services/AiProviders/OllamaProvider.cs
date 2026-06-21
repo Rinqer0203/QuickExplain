@@ -23,7 +23,8 @@ namespace QuickExplain.Services.AiProviders
             Action<string> onGetContent,
             Action<string> onStatus,
             Action<string> onError,
-            Action<TokenUsage> onTokenUsage)
+            Action<TokenUsage> onTokenUsage,
+            CancellationToken cancellationToken)
         {
             try
             {
@@ -38,7 +39,7 @@ namespace QuickExplain.Services.AiProviders
                 requestMessage.Content = new StringContent(JsonSerializer.Serialize(body, jsonOptions), Encoding.UTF8, "application/json");
 
                 using var response = await _httpClient
-                    .SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead)
+                    .SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                     .ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
@@ -46,14 +47,15 @@ namespace QuickExplain.Services.AiProviders
                     return;
                 }
 
-                using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
                 using var reader = new StreamReader(stream, Encoding.UTF8);
                 var hasContent = false;
                 var thinkingFrame = 0;
                 var lastThinkingStatusUpdate = DateTimeOffset.MinValue;
                 while (!reader.EndOfStream)
                 {
-                    var line = await reader.ReadLineAsync().ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
                     if (string.IsNullOrWhiteSpace(line))
                         continue;
 
@@ -102,6 +104,10 @@ namespace QuickExplain.Services.AiProviders
             catch (UriFormatException)
             {
                 onError("Ollama Base URL が正しくありません。設定を確認してください。");
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (HttpRequestException)
             {

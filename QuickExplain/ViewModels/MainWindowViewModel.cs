@@ -69,6 +69,12 @@ namespace QuickExplain
         [RelayCommand]
         private async Task SendQuestion()
         {
+            if (IsRequesting)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(QuestionText))
             {
                 System.Media.SystemSounds.Beep.Play();
@@ -81,8 +87,38 @@ namespace QuickExplain
         }
 
         [RelayCommand]
+        private async Task SendOrCancelQuestion()
+        {
+            if (IsRequesting)
+            {
+                CancelRequest();
+                return;
+            }
+
+            await SendQuestion();
+        }
+
+        [RelayCommand]
+        private void CancelRequest()
+        {
+            if (!IsRequesting)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
+            ApiRequestManager.Instance.CancelCurrentRequest();
+        }
+
+        [RelayCommand]
         private async Task SendQuickQuestion(QuickQuestion? quickQuestion)
         {
+            if (IsRequesting)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
             if (quickQuestion == null || string.IsNullOrWhiteSpace(quickQuestion.Text))
             {
                 System.Media.SystemSounds.Beep.Play();
@@ -129,11 +165,12 @@ namespace QuickExplain
             };
             ChatMessages.Add(_streamingMessage);
 
-            var result = await ApiRequestManager.Instance.RequestTranslation();
+            var requestResult = await ApiRequestManager.Instance.RequestTranslationResult();
             if (_streamingMessage != null)
             {
-                _streamingMessage.Text = result;
-                ApplyTokenUsage(_streamingMessage, ApiRequestManager.Instance.LastTokenUsage);
+                _streamingMessage.Text = requestResult.Text;
+                if (!requestResult.IsCanceled)
+                    ApplyTokenUsage(_streamingMessage, requestResult.TokenUsage);
                 _streamingMessage.IsStreaming = false;
                 _streamingMessage = null;
             }
@@ -261,16 +298,17 @@ namespace QuickExplain
             };
             ChatMessages.Add(_streamingMessage);
 
-            var result = await instance.RequestTranslation();
+            var requestResult = await instance.RequestTranslationResult();
             if (_streamingMessage != null)
             {
-                _streamingMessage.Text = result;
-                ApplyTokenUsage(_streamingMessage, instance.LastTokenUsage);
+                _streamingMessage.Text = requestResult.Text;
+                if (!requestResult.IsCanceled)
+                    ApplyTokenUsage(_streamingMessage, requestResult.TokenUsage);
                 _streamingMessage.IsStreaming = false;
                 _streamingMessage = null;
             }
 
-            return result;
+            return requestResult.Text;
         }
 
         public async Task<string> SubmitImageMessageAsync(byte[] imageBytes, bool resetConversation)
@@ -295,16 +333,17 @@ namespace QuickExplain
             };
             ChatMessages.Add(_streamingMessage);
 
-            var result = await instance.RequestImageQuestion(imageBytes);
+            var requestResult = await instance.RequestImageQuestionResult(imageBytes);
             if (_streamingMessage != null)
             {
-                _streamingMessage.Text = result;
-                ApplyTokenUsage(_streamingMessage, instance.LastTokenUsage);
+                _streamingMessage.Text = requestResult.Text;
+                if (!requestResult.IsCanceled)
+                    ApplyTokenUsage(_streamingMessage, requestResult.TokenUsage);
                 _streamingMessage.IsStreaming = false;
                 _streamingMessage = null;
             }
 
-            return result;
+            return requestResult.Text;
         }
 
         private static ImageSource? CreateImageSource(byte[] imageBytes)

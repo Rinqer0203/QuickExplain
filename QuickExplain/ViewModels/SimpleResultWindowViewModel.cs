@@ -23,6 +23,9 @@ namespace QuickExplain
         [ObservableProperty]
         private bool _showQuickQuestions;
 
+        [ObservableProperty]
+        private bool _isRequesting;
+
         public ObservableCollection<QuickQuestion> QuickQuestions => AppConfig.Instance.GetSelectedPromptProfile().QuickQuestions;
 
         public SimpleResultWindowViewModel()
@@ -36,6 +39,12 @@ namespace QuickExplain
         [RelayCommand]
         private async Task SendQuestion()
         {
+            if (IsRequesting)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(QuestionText))
             {
                 System.Media.SystemSounds.Beep.Play();
@@ -49,8 +58,38 @@ namespace QuickExplain
         }
 
         [RelayCommand]
+        private async Task SendOrCancelQuestion()
+        {
+            if (IsRequesting)
+            {
+                CancelRequest();
+                return;
+            }
+
+            await SendQuestion();
+        }
+
+        [RelayCommand]
+        private void CancelRequest()
+        {
+            if (!IsRequesting)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
+            ApiRequestManager.Instance.CancelCurrentRequest();
+        }
+
+        [RelayCommand]
         private async Task SendQuickQuestion(QuickQuestion? quickQuestion)
         {
+            if (IsRequesting)
+            {
+                System.Media.SystemSounds.Beep.Play();
+                return;
+            }
+
             if (quickQuestion == null || string.IsNullOrWhiteSpace(quickQuestion.Text))
             {
                 System.Media.SystemSounds.Beep.Play();
@@ -76,11 +115,13 @@ namespace QuickExplain
 
         private void OnRequestStarted()
         {
+            IsRequesting = true;
             ShowQuickQuestions = false;
         }
 
         private void OnRequestCompleted(bool success)
         {
+            IsRequesting = false;
             ShowQuickQuestions = success && string.IsNullOrWhiteSpace(TranslatedText) == false;
         }
     }
