@@ -22,7 +22,8 @@ namespace QuickExplain
         private BundledTheme? _bundledTheme;
         private int? _screenshotHotKeyId;
         private bool _isGlobalHotKeyActionRunning;
-        private bool _isScreenshotCapturing;
+        private bool _isScreenshotCaptureActive;
+        private bool _isScreenshotQuestionRunning;
         private Views.ScreenshotOverlayWindow? _activeScreenshotOverlay;
         private DateTime _ignoreSimpleResultWindowHideUntil = DateTime.MinValue;
 
@@ -283,44 +284,55 @@ namespace QuickExplain
 
         private async Task OnScreenshotHotKeyPressedAsync()
         {
-            if (_isScreenshotCapturing)
+            if (_isScreenshotCaptureActive)
             {
                 _activeScreenshotOverlay?.CancelCapture();
                 return;
             }
 
+            if (_isScreenshotQuestionRunning)
+                return;
+
             if (MainWindow?.DataContext is not MainWindowViewModel mainwindowVM)
                 return;
 
-            _isScreenshotCapturing = true;
-            Views.ScreenshotOverlayWindow? overlay = null;
+            Rect? rect;
+            _isScreenshotCaptureActive = true;
+            var overlay = new Views.ScreenshotOverlayWindow();
+            _activeScreenshotOverlay = overlay;
             try
             {
-                overlay = new Views.ScreenshotOverlayWindow();
-                _activeScreenshotOverlay = overlay;
-                var rect = await overlay.CaptureAsync();
+                rect = await overlay.CaptureAsync();
+            }
+            finally
+            {
+                overlay.Close();
+                _activeScreenshotOverlay = null;
+                _isScreenshotCaptureActive = false;
+            }
 
-                if (rect == null)
-                    return;
+            if (rect == null)
+                return;
 
-                byte[] imageBytes;
-                try
-                {
-                    imageBytes = ScreenCaptureService.CapturePngBytes(rect.Value);
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"スクリーンショットの取得に失敗しました: {ex.Message}", "スクリーンショット", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
+            byte[] imageBytes;
+            try
+            {
+                imageBytes = ScreenCaptureService.CapturePngBytes(rect.Value);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"スクリーンショットの取得に失敗しました: {ex.Message}", "スクリーンショット", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
+            _isScreenshotQuestionRunning = true;
+            try
+            {
                 await ExecuteImageQuestionAsync(mainwindowVM, imageBytes);
             }
             finally
             {
-                overlay?.Close();
-                _activeScreenshotOverlay = null;
-                _isScreenshotCapturing = false;
+                _isScreenshotQuestionRunning = false;
             }
         }
 

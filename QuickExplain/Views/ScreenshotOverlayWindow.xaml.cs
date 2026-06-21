@@ -17,6 +17,7 @@ namespace QuickExplain.Views
         private System.Windows.Point _startPointScreen;
         private bool _dragging;
         private TaskCompletionSource<Rect?>? _tcs;
+        private bool _isCompleted;
 
         public ScreenshotOverlayWindow()
         {
@@ -46,7 +47,8 @@ namespace QuickExplain.Views
 
         public Task<Rect?> CaptureAsync()
         {
-            _tcs = new TaskCompletionSource<Rect?>();
+            _isCompleted = false;
+            _tcs = new TaskCompletionSource<Rect?>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (!_stealthMode)
             {
                 InstructionText.Visibility = Visibility.Visible;
@@ -113,8 +115,17 @@ namespace QuickExplain.Views
 
         private void CloseWithResult(Rect? rect)
         {
+            if (_isCompleted)
+                return;
+
+            _isCompleted = true;
+            _dragging = false;
+            if (IsMouseCaptured)
+                ReleaseMouseCapture();
+
             SelectionRect.Visibility = Visibility.Collapsed;
-            Hide();
+            if (IsVisible)
+                Hide();
             _tcs?.TrySetResult(rect);
         }
 
