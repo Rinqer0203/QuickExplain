@@ -9,6 +9,7 @@ namespace QuickExplain.Services.ApiClients
             GoogleApiRequestModels.Request request,
             string modelName,
             Action<string> onGetContent,
-            Action<string> onError);
+            Action<string> onError,
+            Action<TokenUsage> onTokenUsage);
     }
 }

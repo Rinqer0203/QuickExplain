@@ -18,13 +18,14 @@ namespace QuickExplain.Services.AiProviders
             AiProviderRequest request,
             Action<string> onGetContent,
             Action<string> onStatus,
-            Action<string> onError)
+            Action<string> onError,
+            Action<TokenUsage> onTokenUsage)
         {
             var messages = request.Messages.ToArray();
             if (request.ImageBytes == null)
             {
                 var body = GoogleApiRequestModels.CreateRequest(request.SystemInstruction, messages.AsSpan());
-                return _client.StreamGenerateContentAsync(AppConfig.Instance.GoogleApiKey, body, request.ModelName, onGetContent, onError);
+                return _client.StreamGenerateContentAsync(AppConfig.Instance.GoogleApiKey, body, request.ModelName, onGetContent, onError, onTokenUsage);
             }
 
             var imageBase64 = Convert.ToBase64String(request.ImageBytes);
@@ -34,7 +35,7 @@ namespace QuickExplain.Services.AiProviders
                 imageBase64,
                 request.ImageMimeType);
 
-            return _client.StreamGenerateContentAsync(AppConfig.Instance.GoogleApiKey, imageBody, request.ModelName, onGetContent, onError);
+            return _client.StreamGenerateContentAsync(AppConfig.Instance.GoogleApiKey, imageBody, request.ModelName, onGetContent, onError, onTokenUsage);
         }
     }
 }

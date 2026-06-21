@@ -25,6 +25,7 @@ namespace QuickExplain.Services
         private string? _pendingProgressText;
         private DispatcherTimer? _progressUpdateTimer;
         private bool _isProgressUpdateTimerActive;
+        public TokenUsage? LastTokenUsage { get; private set; }
         public event Action? RequestStarted;
         public event Action<bool>? RequestCompleted;
         private bool _requestHadError;
@@ -107,6 +108,7 @@ namespace QuickExplain.Services
             try
             {
                 _sb.Clear();
+                LastTokenUsage = null;
                 _requestHadError = false;
                 var config = AppConfig.Instance;
                 if (string.IsNullOrWhiteSpace(config.SelectedAiModel.Name))
@@ -126,7 +128,7 @@ namespace QuickExplain.Services
                     GetSystemInstruction(),
                     _messages.ToArray());
                 OnStatusAction("応答を待っています...");
-                await provider.StreamGenerateContentAsync(request, OnGetContentAction, OnStatusAction, OnErrorAction);
+                await provider.StreamGenerateContentAsync(request, OnGetContentAction, OnStatusAction, OnErrorAction, OnTokenUsageAction);
 
                 var result = _sb.ToString();
                 FlushProgressReceivers(result);
@@ -163,6 +165,7 @@ namespace QuickExplain.Services
             try
             {
                 _sb.Clear();
+                LastTokenUsage = null;
                 _requestHadError = false;
 
                 var config = AppConfig.Instance;
@@ -185,7 +188,7 @@ namespace QuickExplain.Services
                     _messages.ToArray(),
                     imageBytes);
                 OnStatusAction("応答を待っています...");
-                await provider.StreamGenerateContentAsync(request, OnGetContentAction, OnStatusAction, OnErrorAction);
+                await provider.StreamGenerateContentAsync(request, OnGetContentAction, OnStatusAction, OnErrorAction, OnTokenUsageAction);
 
                 var result = _sb.ToString();
                 FlushProgressReceivers(result);
@@ -223,6 +226,11 @@ namespace QuickExplain.Services
             _sb.Append(text);
             var currentText = _sb.ToString();
             UpdateProgressReceivers(currentText);
+        }
+
+        private void OnTokenUsageAction(TokenUsage usage)
+        {
+            LastTokenUsage = usage;
         }
 
         private void UpdateProgressReceivers(string text)

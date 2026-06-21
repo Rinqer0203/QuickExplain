@@ -9,7 +9,8 @@ namespace QuickExplain.Services.ApiClients
             string apiKey,
             OpenAiApiRequestModels.Request request,
             Action<string> onGetContent,
-            Action<string> onError)
+            Action<string> onError,
+            Action<TokenUsage> onTokenUsage)
         {
             return Task.Run(async () =>
             {
@@ -35,6 +36,8 @@ namespace QuickExplain.Services.ApiClients
                     onGetContent.Invoke(chunk);
                     await Task.Delay(50); // 擬似ストリーム間隔
                 }
+
+                onTokenUsage(new TokenUsage(140, 90, 230, 12));
             });
         }
     }

@@ -21,7 +21,8 @@ namespace QuickExplain.Services.ApiClients
             string apiKey,
             OpenAiApiRequestModels.Request request,
             Action<string> onGetContent,
-            Action<string> onError)
+            Action<string> onError,
+            Action<TokenUsage> onTokenUsage)
         {
             var jsonOptions = new JsonSerializerOptions
             {
@@ -41,18 +42,29 @@ namespace QuickExplain.Services.ApiClients
 
             using var stream = await response.Content.ReadAsStreamAsync();
 
-            await Task.Run(() => SseStreamProcessor.ProcessStreamAsync(stream, ExtractContentFromJson, onGetContent, onError));
+            await Task.Run(() => SseStreamProcessor.ProcessStreamAsync(
+                stream,
+                json => ExtractContentFromJson(json, onTokenUsage),
+                onGetContent,
+                onError));
         }
 
-        private static string? ExtractContentFromJson(string jsonPart)
+        private static string? ExtractContentFromJson(string jsonPart, Action<TokenUsage> onTokenUsage)
         {
             try
             {
                 using var doc = JsonDocument.Parse(jsonPart);
 
-                var delta = doc.RootElement
-                    .GetProperty("choices")[0]
-                    .GetProperty("delta");
+                var usage = ExtractTokenUsage(doc.RootElement);
+                if (usage != null)
+                    onTokenUsage(usage);
+
+                if (!doc.RootElement.TryGetProperty("choices", out var choices)
+                    || choices.ValueKind != JsonValueKind.Array
+                    || choices.GetArrayLength() == 0)
+                    return null;
+
+                var delta = choices[0].GetProperty("delta");
 
                 if (delta.TryGetProperty("content", out var contentProperty))
                     return contentProperty.GetString();
@@ -63,6 +75,28 @@ namespace QuickExplain.Services.ApiClients
             {
                 throw new InvalidOperationException($"パースエラー: {ex.Message}", ex);
             }
+        }
+
+        private static TokenUsage? ExtractTokenUsage(JsonElement root)
+        {
+            if (!root.TryGetProperty("usage", out var usage) || usage.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+                return null;
+
+            var inputTokens = TryGetInt(usage, "prompt_tokens");
+            var outputTokens = TryGetInt(usage, "completion_tokens");
+            var totalTokens = TryGetInt(usage, "total_tokens");
+            int? reasoningTokens = null;
+            if (usage.TryGetProperty("completion_tokens_details", out var details))
+                reasoningTokens = TryGetInt(details, "reasoning_tokens");
+
+            return new TokenUsage(inputTokens, outputTokens, totalTokens, reasoningTokens);
+        }
+
+        private static int? TryGetInt(JsonElement element, string propertyName)
+        {
+            return element.TryGetProperty(propertyName, out var property) && property.TryGetInt32(out var value)
+                ? value
+                : null;
         }
     }
 }

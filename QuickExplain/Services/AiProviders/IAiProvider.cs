@@ -10,6 +10,7 @@ namespace QuickExplain.Services.AiProviders
             AiProviderRequest request,
             Action<string> onGetContent,
             Action<string> onStatus,
-            Action<string> onError);
+            Action<string> onError,
+            Action<TokenUsage> onTokenUsage);
     }
 }

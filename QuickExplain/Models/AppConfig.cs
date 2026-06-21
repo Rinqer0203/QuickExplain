@@ -110,6 +110,8 @@ namespace QuickExplain.Models
 
         public bool EnableDoubleCopyAction { get; set; } = true;
 
+        public bool ShowTokenUsageInAiResponses { get; set; } = false;
+
         public bool ScreenshotStealthMode { get; set; } = false;
 
         // ここまでJsonSerializerでシリアライズされるプロパティ

@@ -133,6 +133,7 @@ namespace QuickExplain
             if (_streamingMessage != null)
             {
                 _streamingMessage.Text = result;
+                ApplyTokenUsage(_streamingMessage, ApiRequestManager.Instance.LastTokenUsage);
                 _streamingMessage.IsStreaming = false;
                 _streamingMessage = null;
             }
@@ -264,6 +265,7 @@ namespace QuickExplain
             if (_streamingMessage != null)
             {
                 _streamingMessage.Text = result;
+                ApplyTokenUsage(_streamingMessage, instance.LastTokenUsage);
                 _streamingMessage.IsStreaming = false;
                 _streamingMessage = null;
             }
@@ -297,6 +299,7 @@ namespace QuickExplain
             if (_streamingMessage != null)
             {
                 _streamingMessage.Text = result;
+                ApplyTokenUsage(_streamingMessage, instance.LastTokenUsage);
                 _streamingMessage.IsStreaming = false;
                 _streamingMessage = null;
             }
@@ -321,6 +324,14 @@ namespace QuickExplain
             {
                 return null;
             }
+        }
+
+        private static void ApplyTokenUsage(ChatMessage message, TokenUsage? usage)
+        {
+            if (!AppConfig.Instance.ShowTokenUsageInAiResponses || usage == null)
+                return;
+
+            message.TokenUsageText = usage.ToDisplayText();
         }
 
         private void RemoveMessagesFrom(int startIndex)

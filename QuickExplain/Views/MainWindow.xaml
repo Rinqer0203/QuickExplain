@@ -329,9 +329,17 @@
                                             Source="{Binding ImageSource}"
                                             Stretch="Uniform"
                                             Visibility="Visible" />
+                                        <TextBlock
+                                            x:Name="TokenUsageText"
+                                            Margin="5,2,0,0"
+                                            FontSize="11"
+                                            Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                            Opacity="0.72"
+                                            Text="{Binding TokenUsageText}"
+                                            Visibility="{Binding CanShowTokenUsage, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                         <StackPanel
                                             x:Name="AssistantMessageActions"
-                                            Margin="5,8,0,0"
+                                            Margin="5,6,0,0"
                                             HorizontalAlignment="Left"
                                             Orientation="Horizontal"
                                             Visibility="{Binding CanShowAssistantActions, Converter={StaticResource BooleanToVisibilityConverter}}">

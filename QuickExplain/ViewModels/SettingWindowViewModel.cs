@@ -40,6 +40,9 @@ namespace QuickExplain
         private bool _enableDoubleCopyAction = AppConfig.Instance.EnableDoubleCopyAction;
 
         [ObservableProperty]
+        private bool _showTokenUsageInAiResponses = AppConfig.Instance.ShowTokenUsageInAiResponses;
+
+        [ObservableProperty]
         private HotKeyDefinition _globalHotKey = AppConfig.Instance.GlobalHotKey;
 
         [ObservableProperty]
@@ -159,6 +162,11 @@ namespace QuickExplain
         partial void OnEnableDoubleCopyActionChanged(bool value)
         {
             AppConfig.Instance.EnableDoubleCopyAction = value;
+        }
+
+        partial void OnShowTokenUsageInAiResponsesChanged(bool value)
+        {
+            AppConfig.Instance.ShowTokenUsageInAiResponses = value;
         }
 
         partial void OnGlobalHotKeyChanged(HotKeyDefinition value)

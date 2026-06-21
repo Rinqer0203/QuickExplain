@@ -21,11 +21,16 @@ namespace QuickExplain.Models
         [NotifyPropertyChangedFor(nameof(CanReload))]
         [NotifyPropertyChangedFor(nameof(CanShowAssistantActions))]
         [NotifyPropertyChangedFor(nameof(CanShowUserActions))]
+        [NotifyPropertyChangedFor(nameof(CanShowTokenUsage))]
         private bool _isStreaming;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(CanReload))]
         private bool _supportsReload = true;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanShowTokenUsage))]
+        private string _tokenUsageText = string.Empty;
 
         public bool IsUser => Role == "user";
 
@@ -38,6 +43,8 @@ namespace QuickExplain.Models
         public bool CanShowAssistantActions => IsAssistant && !IsStreaming;
 
         public bool CanReload => IsAssistant && SupportsReload && !IsStreaming;
+
+        public bool CanShowTokenUsage => IsAssistant && !IsStreaming && string.IsNullOrWhiteSpace(TokenUsageText) == false;
 
         public ChatMessage(string role, string displayName, string text, ImageSource? imageSource = null)
         {

@@ -11,7 +11,8 @@ namespace QuickExplain.Services.AiProviders
             AiProviderRequest request,
             Action<string> onGetContent,
             Action<string> onStatus,
-            Action<string> onError)
+            Action<string> onError,
+            Action<TokenUsage> onTokenUsage)
         {
             return Task.Run(async () =>
             {
@@ -38,6 +39,8 @@ namespace QuickExplain.Services.AiProviders
                     onGetContent(fullText.Substring(i, Math.Min(chunkSize, fullText.Length - i)));
                     await Task.Delay(50);
                 }
+
+                onTokenUsage(new TokenUsage(120, 80, 200));
             });
         }
     }

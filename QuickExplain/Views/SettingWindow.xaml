@@ -184,6 +184,15 @@
                     IsChecked="{Binding EnableDoubleCopyAction}"
                     Style="{StaticResource MaterialDesignCheckBox}" />
 
+                <CheckBox
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,0,0,20"
+                    HorizontalAlignment="Left"
+                    Content="AI回答にトークン消費量を表示"
+                    IsChecked="{Binding ShowTokenUsageInAiResponses}"
+                    Style="{StaticResource MaterialDesignCheckBox}" />
+
                 <Button
                     Margin="0,0,0,20"
                     HorizontalAlignment="Left"

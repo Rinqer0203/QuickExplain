@@ -22,7 +22,8 @@ namespace QuickExplain.Services.AiProviders
             AiProviderRequest request,
             Action<string> onGetContent,
             Action<string> onStatus,
-            Action<string> onError)
+            Action<string> onError,
+            Action<TokenUsage> onTokenUsage)
         {
             try
             {
@@ -85,7 +86,12 @@ namespace QuickExplain.Services.AiProviders
                         }
 
                         if (document.RootElement.TryGetProperty("done", out var done) && done.GetBoolean())
+                        {
+                            var usage = ExtractTokenUsage(document.RootElement);
+                            if (usage != null)
+                                onTokenUsage(usage);
                             break;
+                        }
                     }
                     catch (JsonException ex)
                     {
@@ -141,6 +147,27 @@ namespace QuickExplain.Services.AiProviders
         private static string ConvertRole(string role)
         {
             return role == "user" ? "user" : "assistant";
+        }
+
+        private static TokenUsage? ExtractTokenUsage(JsonElement root)
+        {
+            var inputTokens = TryGetInt(root, "prompt_eval_count");
+            var outputTokens = TryGetInt(root, "eval_count");
+            int? totalTokens = inputTokens.HasValue || outputTokens.HasValue
+                ? (inputTokens ?? 0) + (outputTokens ?? 0)
+                : null;
+
+            if (!inputTokens.HasValue && !outputTokens.HasValue && !totalTokens.HasValue)
+                return null;
+
+            return new TokenUsage(inputTokens, outputTokens, totalTokens);
+        }
+
+        private static int? TryGetInt(JsonElement element, string propertyName)
+        {
+            return element.TryGetProperty(propertyName, out var property) && property.TryGetInt32(out var value)
+                ? value
+                : null;
         }
 
         private sealed record Request(

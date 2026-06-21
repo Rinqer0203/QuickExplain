@@ -5,7 +5,8 @@ namespace QuickExplain.Models
     public class OpenAiApiRequestModels
     {
         public record Message(string role, object content);
-        public record Request(string model, Message[] messages, bool stream = true);
+        public record StreamOptions(bool include_usage = true);
+        public record Request(string model, Message[] messages, bool stream = true, StreamOptions? stream_options = null);
         public record ImageUrl(string url);
         public record ContentPart(string type, string? text = null, ImageUrl? image_url = null);
 
@@ -23,7 +24,7 @@ namespace QuickExplain.Models
                 messageArray[i + 1] = new Message(ConvertRole(role), text);
             }
 
-            return new Request(modelName, messageArray);
+            return new Request(modelName, messageArray, stream_options: new StreamOptions());
         }
 
         /// <summary>

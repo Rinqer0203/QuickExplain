@@ -30,7 +30,8 @@ namespace QuickExplain.Services.ApiClients
             GoogleApiRequestModels.Request request,
             string modelName,
             Action<string> onGetContent,
-            Action<string> onError)
+            Action<string> onError,
+            Action<TokenUsage> onTokenUsage)
         {
             var path = $"{BaseUrl}models/{modelName}:streamGenerateContent?alt=sse&key={apiKey}";
             var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -50,22 +51,37 @@ namespace QuickExplain.Services.ApiClients
             }
 
             using var stream = await response.Content.ReadAsStreamAsync();
-            await Task.Run(() => SseStreamProcessor.ProcessStreamAsync(stream, ExtractContentFromJson, onGetContent, onError));
+            await Task.Run(() => SseStreamProcessor.ProcessStreamAsync(
+                stream,
+                json => ExtractContentFromJson(json, onTokenUsage),
+                onGetContent,
+                onError));
         }
 
         /// <summary>
         /// jsonからテキストコンテンツを抽出する
         /// </summary>
-        private static string? ExtractContentFromJson(string json)
+        private static string? ExtractContentFromJson(string json, Action<TokenUsage> onTokenUsage)
         {
             try
             {
                 using var doc = JsonDocument.Parse(json);
-                var parts = doc.RootElement
-                    .GetProperty("candidates")[0]
-                    .GetProperty("content")
-                    .GetProperty("parts")
+                var usage = ExtractTokenUsage(doc.RootElement);
+                if (usage != null)
+                    onTokenUsage(usage);
+
+                if (!doc.RootElement.TryGetProperty("candidates", out var candidates)
+                    || candidates.ValueKind != JsonValueKind.Array
+                    || candidates.GetArrayLength() == 0)
+                    return null;
+
+                if (!candidates[0].TryGetProperty("content", out var content)
+                    || !content.TryGetProperty("parts", out var partsElement))
+                    return null;
+
+                var parts = partsElement
                     .EnumerateArray()
+                    .Where(p => p.TryGetProperty("text", out _))
                     .Select(p => p.GetProperty("text").GetString());
 
                 return string.Join("", parts);
@@ -74,6 +90,26 @@ namespace QuickExplain.Services.ApiClients
             {
                 throw new InvalidOperationException($"JSONパースエラー: {ex.Message}", ex);
             }
+        }
+
+        private static TokenUsage? ExtractTokenUsage(JsonElement root)
+        {
+            if (!root.TryGetProperty("usageMetadata", out var usage))
+                return null;
+
+            var inputTokens = TryGetInt(usage, "promptTokenCount");
+            var outputTokens = TryGetInt(usage, "candidatesTokenCount");
+            var totalTokens = TryGetInt(usage, "totalTokenCount");
+            var reasoningTokens = TryGetInt(usage, "thoughtsTokenCount");
+
+            return new TokenUsage(inputTokens, outputTokens, totalTokens, reasoningTokens);
+        }
+
+        private static int? TryGetInt(JsonElement element, string propertyName)
+        {
+            return element.TryGetProperty(propertyName, out var property) && property.TryGetInt32(out var value)
+                ? value
+                : null;
         }
     }
 }
