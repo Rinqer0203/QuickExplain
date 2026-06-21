@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using QuickExplain.Services;
 using System.Windows.Shapes;
+using System.Windows.Interop;
 
 namespace QuickExplain.Views
 {
@@ -24,10 +25,7 @@ namespace QuickExplain.Views
             InitializeComponent();
             _stealthMode = Models.AppConfig.Instance.ScreenshotStealthMode;
 
-            Left = SystemParameters.VirtualScreenLeft;
-            Top = SystemParameters.VirtualScreenTop;
-            Width = SystemParameters.VirtualScreenWidth;
-            Height = SystemParameters.VirtualScreenHeight;
+            SetBoundsToActiveScreen();
             if (_stealthMode)
             {
                 Background = System.Windows.Media.Brushes.Black;
@@ -157,18 +155,33 @@ namespace QuickExplain.Views
         {
             try
             {
-                var cursor = System.Windows.Forms.Cursor.Position;
-                var screen = System.Windows.Forms.Screen.FromPoint(cursor);
-                var offsetX = screen.Bounds.Left - (int)SystemParameters.VirtualScreenLeft;
-                var offsetY = screen.Bounds.Top - (int)SystemParameters.VirtualScreenTop;
-                Canvas.SetLeft(InstructionText, offsetX + 16);
-                Canvas.SetTop(InstructionText, offsetY + 16);
+                Canvas.SetLeft(InstructionText, 16);
+                Canvas.SetTop(InstructionText, 16);
             }
             catch
             {
                 Canvas.SetLeft(InstructionText, 16);
                 Canvas.SetTop(InstructionText, 16);
             }
+        }
+
+        private void SetBoundsToActiveScreen()
+        {
+            var cursor = System.Windows.Forms.Cursor.Position;
+            var captureBounds = System.Windows.Forms.Screen.FromPoint(cursor).Bounds;
+
+            var helper = new WindowInteropHelper(this);
+            helper.EnsureHandle();
+            var source = HwndSource.FromHwnd(helper.Handle);
+            var transform = source?.CompositionTarget?.TransformFromDevice ?? System.Windows.Media.Matrix.Identity;
+
+            var topLeft = transform.Transform(new System.Windows.Point(captureBounds.Left, captureBounds.Top));
+            var bottomRight = transform.Transform(new System.Windows.Point(captureBounds.Right, captureBounds.Bottom));
+
+            Left = topLeft.X;
+            Top = topLeft.Y;
+            Width = Math.Max(1, bottomRight.X - topLeft.X);
+            Height = Math.Max(1, bottomRight.Y - topLeft.Y);
         }
     }
 }
