@@ -112,6 +112,10 @@ namespace QuickExplain.Models
 
         public bool ShowTokenUsageInAiResponses { get; set; } = false;
 
+        public bool SaveScreenshots { get; set; } = true;
+
+        public bool AdjustWindowPosition { get; set; } = true;
+
         public bool ScreenshotStealthMode { get; set; } = false;
 
         // ここまでJsonSerializerでシリアライズされるプロパティ

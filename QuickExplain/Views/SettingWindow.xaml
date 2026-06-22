@@ -193,6 +193,24 @@
                     IsChecked="{Binding ShowTokenUsageInAiResponses}"
                     Style="{StaticResource MaterialDesignCheckBox}" />
 
+                <CheckBox
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,0,0,20"
+                    HorizontalAlignment="Left"
+                    Content="スクリーンショットを保存"
+                    IsChecked="{Binding SaveScreenshots}"
+                    Style="{StaticResource MaterialDesignCheckBox}" />
+
+                <CheckBox
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,0,0,20"
+                    HorizontalAlignment="Left"
+                    Content="ウィンドウ位置を調整"
+                    IsChecked="{Binding AdjustWindowPosition}"
+                    Style="{StaticResource MaterialDesignCheckBox}" />
+
                 <Button
                     Margin="0,0,0,20"
                     HorizontalAlignment="Left"

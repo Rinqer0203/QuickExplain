@@ -225,7 +225,7 @@ namespace QuickExplain
             window.Owner = null;
             window.ShowActivated = true;
             ShowWindow(window);
-            WindowPositioner.SetWindowPosition(window);
+            AdjustWindowPositionIfEnabled(window);
         }
 
         private async Task ExecuteTranslationAsync(string text)
@@ -240,7 +240,7 @@ namespace QuickExplain
             if (AppConfig.Instance.SelectedResultWindowType == WindowType.MainWindow)
             {
                 ShowWindow(MainWindow);
-                WindowPositioner.SetWindowPosition(MainWindow);
+                AdjustWindowPositionIfEnabled(MainWindow);
             }
             else if (AppConfig.Instance.SelectedResultWindowType == WindowType.SimpleResultWindow)
             {
@@ -341,7 +341,7 @@ namespace QuickExplain
             if (AppConfig.Instance.SelectedResultWindowType == WindowType.MainWindow)
             {
                 ShowWindow(MainWindow);
-                WindowPositioner.SetWindowPosition(MainWindow);
+                AdjustWindowPositionIfEnabled(MainWindow);
             }
             else if (AppConfig.Instance.SelectedResultWindowType == WindowType.SimpleResultWindow)
             {
@@ -354,6 +354,12 @@ namespace QuickExplain
             {
                 _clipboardActionHandler?.SafeSetClipboardText(result);
             }
+        }
+
+        private static void AdjustWindowPositionIfEnabled(Window? window)
+        {
+            if (AppConfig.Instance.AdjustWindowPosition)
+                WindowPositioner.SetWindowPosition(window);
         }
 
         private void UpdateGlobalHotKey(HotKeyDefinition hotKey)

@@ -209,7 +209,9 @@ namespace QuickExplain.Services
                 _requestHadError = false;
 
                 var config = AppConfig.Instance;
-                ImageLogService.SaveSentImage(imageBytes, config.SelectedAiModel.Type.ToString());
+                if (config.SaveScreenshots)
+                    ImageLogService.SaveSentImage(imageBytes, config.SelectedAiModel.Type.ToString());
+
                 if (string.IsNullOrWhiteSpace(config.SelectedAiModel.Name))
                 {
                     _requestHadError = true;

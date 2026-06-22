@@ -43,6 +43,12 @@ namespace QuickExplain
         private bool _showTokenUsageInAiResponses = AppConfig.Instance.ShowTokenUsageInAiResponses;
 
         [ObservableProperty]
+        private bool _saveScreenshots = AppConfig.Instance.SaveScreenshots;
+
+        [ObservableProperty]
+        private bool _adjustWindowPosition = AppConfig.Instance.AdjustWindowPosition;
+
+        [ObservableProperty]
         private HotKeyDefinition _globalHotKey = AppConfig.Instance.GlobalHotKey;
 
         [ObservableProperty]
@@ -167,6 +173,16 @@ namespace QuickExplain
         partial void OnShowTokenUsageInAiResponsesChanged(bool value)
         {
             AppConfig.Instance.ShowTokenUsageInAiResponses = value;
+        }
+
+        partial void OnSaveScreenshotsChanged(bool value)
+        {
+            AppConfig.Instance.SaveScreenshots = value;
+        }
+
+        partial void OnAdjustWindowPositionChanged(bool value)
+        {
+            AppConfig.Instance.AdjustWindowPosition = value;
         }
 
         partial void OnGlobalHotKeyChanged(HotKeyDefinition value)
