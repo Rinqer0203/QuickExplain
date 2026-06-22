@@ -1,10 +1,9 @@
 using System;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using QuickExplain.Services;
-using System.Windows.Shapes;
 using System.Windows.Interop;
+using Forms = System.Windows.Forms;
 
 namespace QuickExplain.Views
 {
@@ -13,19 +12,29 @@ namespace QuickExplain.Views
     /// </summary>
     public partial class ScreenshotOverlayWindow : Window
     {
-        private readonly bool _stealthMode;
-        private System.Windows.Point _startPoint;
-        private System.Windows.Point _startPointScreen;
-        private bool _dragging;
-        private TaskCompletionSource<Rect?>? _tcs;
-        private bool _isCompleted;
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetWindowPos(
+            IntPtr hWnd,
+            IntPtr hWndInsertAfter,
+            int x,
+            int y,
+            int cx,
+            int cy,
+            uint uFlags);
 
-        public ScreenshotOverlayWindow()
+        private readonly ScreenshotOverlayCaptureSession _session;
+        private readonly bool _stealthMode;
+        private readonly Forms.Screen _screen;
+        private bool _dragging;
+
+        internal ScreenshotOverlayWindow(ScreenshotOverlayCaptureSession session, Forms.Screen screen, bool showInstruction)
         {
+            _session = session;
+            _screen = screen;
             InitializeComponent();
             _stealthMode = Models.AppConfig.Instance.ScreenshotStealthMode;
 
-            SetBoundsToActiveScreen();
+            SetBoundsToScreen(_screen);
             if (_stealthMode)
             {
                 Background = System.Windows.Media.Brushes.Black;
@@ -37,39 +46,30 @@ namespace QuickExplain.Views
                 Cursor = System.Windows.Input.Cursors.Cross;
             }
 
+            if (!showInstruction)
+                InstructionText.Visibility = Visibility.Collapsed;
+
             MouseLeftButtonDown += OnMouseLeftButtonDown;
             MouseMove += OnMouseMove;
             MouseLeftButtonUp += OnMouseLeftButtonUp;
             KeyDown += OnKeyDown;
         }
 
-        public Task<Rect?> CaptureAsync()
+        internal Forms.Screen Screen => _screen;
+
+        internal void ShowOverlay()
         {
-            _isCompleted = false;
-            _tcs = new TaskCompletionSource<Rect?>(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!_stealthMode)
-            {
-                InstructionText.Visibility = Visibility.Visible;
-                PositionInstructionTextOnActiveScreen();
-            }
+            ShowActivated = false;
             Show();
-            ShowActivated = true;
-            Activate();
-            WindowUtilities.ForceActive(this);
-            Focus();
-            return _tcs.Task;
+            ApplyNativeBoundsToScreen();
         }
 
         private void OnMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            _startPoint = e.GetPosition(this);
-            _startPointScreen = PointToScreen(_startPoint);
+            var startPointScreen = PointToScreen(e.GetPosition(this));
             _dragging = true;
-            if (!_stealthMode)
-            {
-                SelectionRect.Visibility = Visibility.Visible;
-            }
             CaptureMouse();
+            _session.BeginDrag(startPointScreen);
         }
 
         private void OnMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
@@ -77,15 +77,7 @@ namespace QuickExplain.Views
             if (!_dragging)
                 return;
 
-            var current = e.GetPosition(this);
-            if (!_stealthMode)
-            {
-                var rect = CalculateRect(current);
-                Canvas.SetLeft(SelectionRect, rect.X);
-                Canvas.SetTop(SelectionRect, rect.Y);
-                SelectionRect.Width = rect.Width;
-                SelectionRect.Height = rect.Height;
-            }
+            _session.UpdateDrag(PointToScreen(e.GetPosition(this)));
         }
 
         private void OnMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -96,79 +88,53 @@ namespace QuickExplain.Views
             _dragging = false;
             ReleaseMouseCapture();
 
-            var endPoint = e.GetPosition(this);
-            var rect = CalculateRect(endPoint);
-            var screenRect = CalculateScreenRect(endPoint);
-
-            CloseWithResult(rect.Width < 2 || rect.Height < 2 ? null : screenRect);
+            _session.EndDrag(PointToScreen(e.GetPosition(this)));
         }
 
         private void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Escape)
             {
-                CloseWithResult(null);
+                _session.CancelCapture();
             }
         }
 
-        private void CloseWithResult(Rect? rect)
+        internal void ClearSelection()
         {
-            if (_isCompleted)
-                return;
-
-            _isCompleted = true;
             _dragging = false;
             if (IsMouseCaptured)
                 ReleaseMouseCapture();
 
             SelectionRect.Visibility = Visibility.Collapsed;
-            if (IsVisible)
-                Hide();
-            _tcs?.TrySetResult(rect);
         }
 
-        private Rect CalculateRect(System.Windows.Point currentPoint)
+        internal void UpdateSelection(Rect screenRect)
         {
-            var x = Math.Min(_startPoint.X, currentPoint.X);
-            var y = Math.Min(_startPoint.Y, currentPoint.Y);
-            var width = Math.Abs(_startPoint.X - currentPoint.X);
-            var height = Math.Abs(_startPoint.Y - currentPoint.Y);
-            return new Rect(x, y, width, height);
-        }
+            if (_stealthMode)
+                return;
 
-        private Rect CalculateScreenRect(System.Windows.Point currentPoint)
-        {
-            var currentScreenPoint = PointToScreen(currentPoint);
-            var x = Math.Min(_startPointScreen.X, currentScreenPoint.X);
-            var y = Math.Min(_startPointScreen.Y, currentScreenPoint.Y);
-            var width = Math.Abs(_startPointScreen.X - currentScreenPoint.X);
-            var height = Math.Abs(_startPointScreen.Y - currentScreenPoint.Y);
-            return new Rect(x, y, width, height);
-        }
-
-        public void CancelCapture()
-        {
-            CloseWithResult(null);
-        }
-
-        private void PositionInstructionTextOnActiveScreen()
-        {
-            try
+            var bounds = _screen.Bounds;
+            var screenBounds = new Rect(bounds.Left, bounds.Top, bounds.Width, bounds.Height);
+            var intersection = Rect.Intersect(screenRect, screenBounds);
+            if (intersection.IsEmpty || intersection.Width < 1 || intersection.Height < 1)
             {
-                Canvas.SetLeft(InstructionText, 16);
-                Canvas.SetTop(InstructionText, 16);
+                SelectionRect.Visibility = Visibility.Collapsed;
+                return;
             }
-            catch
-            {
-                Canvas.SetLeft(InstructionText, 16);
-                Canvas.SetTop(InstructionText, 16);
-            }
+
+            var topLeft = PointFromScreen(new System.Windows.Point(intersection.Left, intersection.Top));
+            var bottomRight = PointFromScreen(new System.Windows.Point(intersection.Right, intersection.Bottom));
+
+            Canvas.SetLeft(SelectionRect, topLeft.X);
+            Canvas.SetTop(SelectionRect, topLeft.Y);
+            SelectionRect.Width = Math.Max(1, bottomRight.X - topLeft.X);
+            SelectionRect.Height = Math.Max(1, bottomRight.Y - topLeft.Y);
+            SelectionRect.Visibility = Visibility.Visible;
         }
 
-        private void SetBoundsToActiveScreen()
+        private void SetBoundsToScreen(Forms.Screen screen)
         {
-            var cursor = System.Windows.Forms.Cursor.Position;
-            var captureBounds = System.Windows.Forms.Screen.FromPoint(cursor).Bounds;
+            var captureBounds = screen.Bounds;
 
             var helper = new WindowInteropHelper(this);
             helper.EnsureHandle();
@@ -182,6 +148,25 @@ namespace QuickExplain.Views
             Top = topLeft.Y;
             Width = Math.Max(1, bottomRight.X - topLeft.X);
             Height = Math.Max(1, bottomRight.Y - topLeft.Y);
+        }
+
+        private void ApplyNativeBoundsToScreen()
+        {
+            var handle = new WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero)
+                return;
+
+            var bounds = _screen.Bounds;
+            const uint SWP_NOZORDER = 0x0004;
+            const uint SWP_NOACTIVATE = 0x0010;
+            SetWindowPos(
+                handle,
+                IntPtr.Zero,
+                bounds.Left,
+                bounds.Top,
+                Math.Max(1, bounds.Width),
+                Math.Max(1, bounds.Height),
+                SWP_NOZORDER | SWP_NOACTIVATE);
         }
     }
 }

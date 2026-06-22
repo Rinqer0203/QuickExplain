@@ -24,7 +24,7 @@ namespace QuickExplain
         private bool _isGlobalHotKeyActionRunning;
         private bool _isScreenshotCaptureActive;
         private bool _isScreenshotQuestionRunning;
-        private Views.ScreenshotOverlayWindow? _activeScreenshotOverlay;
+        private Views.ScreenshotOverlayCaptureSession? _activeScreenshotOverlaySession;
         private DateTime _ignoreSimpleResultWindowHideUntil = DateTime.MinValue;
 
 
@@ -286,7 +286,7 @@ namespace QuickExplain
         {
             if (_isScreenshotCaptureActive)
             {
-                _activeScreenshotOverlay?.CancelCapture();
+                _activeScreenshotOverlaySession?.CancelCapture();
                 return;
             }
 
@@ -298,16 +298,16 @@ namespace QuickExplain
 
             Rect? rect;
             _isScreenshotCaptureActive = true;
-            var overlay = new Views.ScreenshotOverlayWindow();
-            _activeScreenshotOverlay = overlay;
+            var overlaySession = new Views.ScreenshotOverlayCaptureSession();
+            _activeScreenshotOverlaySession = overlaySession;
             try
             {
-                rect = await overlay.CaptureAsync();
+                rect = await overlaySession.CaptureAsync();
             }
             finally
             {
-                overlay.Close();
-                _activeScreenshotOverlay = null;
+                overlaySession.Close();
+                _activeScreenshotOverlaySession = null;
                 _isScreenshotCaptureActive = false;
             }
 
